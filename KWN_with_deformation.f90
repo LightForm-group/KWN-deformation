@@ -87,16 +87,15 @@ real(pReal), parameter :: &
  	end type tKwnpowerlawMicrostructure
 
 !--------------------------------------------------------------------------------------------------
-! containers for parameters and state ! changed compared to damask
-  type(tParameters) :: prm
-  type(tKwnpowerlawState) :: dot, &
+! containers for parameters and state 
+  	type(tParameters) :: prm
+  	type(tKwnpowerlawState) :: dot, &
     					     stt
-  type(tKwnpowerlawMicrostructure) :: dst
-  integer :: &
-    ph, i, &
-    Nmembers
-!     sizeState, sizeDotState, &
-!     startIndex, endIndex
+  	type(tKwnpowerlawMicrostructure) :: dst
+  	integer :: &
+    	ph, i, &
+    	Nmembers
+
     
   	
   logical ::decrease_time_step !1 if the time step needs to be reduced                                                                                
