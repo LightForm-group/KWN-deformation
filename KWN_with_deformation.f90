@@ -76,15 +76,15 @@ real(pReal), parameter :: &
       		time ! time [s]
     end type tKwnpowerlawState
 
-!corresponds to the name if the type in Damask
- type :: tKwnpowerlawMicrostructure
-   real(pReal),                  dimension(:),   allocatable :: &
-     total_precipitate_density, &                                                             
-     avg_precipitate_radius, &
-     precipitate_volume_frac
+
+	type :: tKwnpowerlawMicrostructure
+   		real(pReal),                  dimension(:),   allocatable :: &
+     		total_precipitate_density, &                                                             
+     		avg_precipitate_radius, &
+     		precipitate_volume_frac
     
-  real(pReal), dimension(:,:), allocatable :: c_matrix
- end type tKwnpowerlawMicrostructure
+  		real(pReal), dimension(:,:), allocatable :: c_matrix
+ 	end type tKwnpowerlawMicrostructure
 
 !--------------------------------------------------------------------------------------------------
 ! containers for parameters and state ! changed compared to damask
