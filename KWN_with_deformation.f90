@@ -98,9 +98,9 @@ real(pReal), parameter :: &
 
     
   	
-  logical ::decrease_time_step !1 if the time step needs to be reduced                                                                                
-  ! test Madeleine, en will be the time increment
-  integer :: en, &
+  	logical ::decrease_time_step !1 if the time step needs to be reduced                                                                                
+  		! test Madeleine, en will be the time increment
+  	integer :: en, &
   			 bin, &
   			 k, &
   			 Ntime, &
