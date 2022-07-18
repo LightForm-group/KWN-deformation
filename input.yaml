@@ -40,7 +40,7 @@ activation_energy_pipe_diffusion: 108.3e+3 # [J/mol] -ref Legros et al. 2008
 vacancy_formation_energy: 0.52 # eV
 vacancy_migration_energy: 0.93 # eV
 dislocation_arrangement: 10 # empirical factor from 1 to 10 in Militzer model
-vacancy_generation: 0.035 # mechanical vacancy production constant in Militzer model - that needs to be checked for 7075 - - set to zero if there is no deformation
+vacancy_generation: 0.035 # mechanical vacancy production constant in Militzer model -  - set to zero if there is no deformation
 initial_dislocation_density: 1.0e+14 # /m^2
 saturation_dislocation_density: 1.0e+14 #  /m^2
 burgers_vector:  2.9e-10  #[m]
@@ -54,8 +54,8 @@ n: 6.68309
 
 
 ## KWN discretisation 
-kwn_step0: -9.30          # starting bin radius in  (m)
-kwn_stepsize: 0.01          # spacing between bins (m)
+kwn_step0: -9.30          # starting bin radius in logscale (m)
+kwn_stepsize: 0.01          # spacing between bins in logscale (m)
 kwn_nsteps: 100             # no. of radius bins
 dt_max: 0.01 #maximum time increment  [s]
 
