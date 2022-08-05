@@ -50,9 +50,8 @@ program KWN
 				burgers, & !matrice burgers vector
 				jog_formation_energy, & ! formation energy for jogs
 				q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-				solute_strength, & ! constant related to the solid solution hardening- cf [2]
-				enthalpy, & ! formation enthalpy of precipitates - cf [3] 
-				entropy !formation entropy of precipitates - cf [3] 
+				solute_strength ! constant related to the solid solution hardening- cf [2]
+
 	  
 		! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 		real(pReal), dimension(:), allocatable :: &
@@ -262,8 +261,6 @@ program KWN
 	READ(1,*) stoechiometry(1)
 	READ(1,*) stoechiometry(2)
 	READ(1,*) stoechiometry(3)
-	READ(1,*) prm%enthalpy ! [J/mol]
-	READ(1,*) prm%entropy ![J/mol/K]
 	READ(1,*) prm%vacancy_sink_spacing ![m]
 	READ(1,*) prm%vacancy_diffusion0 ![m^2/s]
 	READ(1,*) prm%jog_formation_energy ![ev]
@@ -285,6 +282,8 @@ program KWN
 	READ(1,*) A ![/s] - sinepower law for stress 
 	READ(1,*) Q_stress ![J/mol] - activation energy in flow stress law
 	READ(1,*) n !exponent in sinepower law for stress
+	READ(1,*) prm%ceq_matrix(1) !equilibrium concentration in the matrix
+	READ(1,*) prm%ceq_matrix(2) !equilibrium concentration in the matrix
 	CLOSE(1)
 		
 
@@ -450,14 +449,12 @@ program KWN
 
 	temp_diffusion_coefficient=diffusion_coefficient(1)
 
-	!calculate the equilibrium composition of the matrix as a function of entropy and enthalpy of mixing for a flat interface
-	call get_equilibrium(   T, stoechiometry(:), dst%c_matrix(:,en), prm%ceq_matrix(:), &
-							N_elements, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%entropy, prm%enthalpy)
+
 
 	!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)	                     
 	call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
 								prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%entropy, prm%enthalpy)
+								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en))
 
 	!calculate the initial growth rate of precipitates of all sizes    
 	call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit ) 
@@ -515,10 +512,6 @@ program KWN
 			200 FORMAT ('Migration energy: ', E30.6, ' J/mol') 
 			WRITE (201,300) prm%diffusion0(1)
 			300 FORMAT ('D0: ', E30.6, ' m^2/s') 	
-			WRITE(201, 202) prm%enthalpy
-			202 FORMAT ('Formation enthalpy:',E30.6, ' J/mol' )
-			WRITE(201, 203) prm%entropy
-			203 FORMAT ('Formation entropy:',E30.6, ' J/mol/K' )
 			WRITE (201,*) ' '
 			WRITE (201,*) 'Initial distribution'		
 			WRITE (201,302) prm%mean_radius_initial	 
@@ -1038,69 +1031,9 @@ program KWN
 end program KWN
  
  
-subroutine get_equilibrium(T, stoechiometry, c_matrix, ceq_matrix, N_elements, diffusion_coefficient, volume_fraction, entropy, enthalpy)
-		
-	! get equilibrium for a flat interface as the intersection between stoichiometric line and solubility product
-	implicit none
-	integer, parameter:: pReal = selected_real_kind(25) 
-
-	integer, intent(in):: N_elements
-	integer, intent(in),  dimension(N_elements+1) :: stoechiometry
-	real(pReal), intent(in), dimension(N_elements) ::  c_matrix, diffusion_coefficient
-	real(pReal), intent(inout), dimension(N_elements) :: ceq_matrix
-	real(pReal), intent(in) :: T, volume_fraction, entropy, enthalpy
-	real(pReal) :: x_min, x_max, solubility_product, delta
-	
-	
-	if (N_elements>1) then   
-
-		
-		solubility_product=exp((entropy/8.314_pReal-enthalpy/8.314_pReal/T))  ! for 7449
-		
-		
-		x_min=0.0_pReal
-		x_max=1.0_pReal!
-
-		!  find the intersection between stoichiometric line and solubility line by dichotomy for Mg - more information in ref [3] or [6] + [5]
-		do while (abs(x_min-x_max)/x_max>0.001_pReal.AND.x_max>1.0e-8_pReal)	
-
-			ceq_matrix(1)=(x_min+x_max)/2.0_pReal
-			ceq_matrix(2)=  (c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))&
-							*diffusion_coefficient(1)/diffusion_coefficient(2)&
-							*(ceq_matrix(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction)
-							
-			if (ceq_matrix(2)<0.0_pReal) then	
-				x_min =ceq_matrix(1)
-			else
-				! delta=0 ==> intersection between stoichiometry and solubility line
-				delta=	ceq_matrix(1)**stoechiometry(1)*((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))&
-						*diffusion_coefficient(1)/diffusion_coefficient(2)*(ceq_matrix(1)&
-						*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)&
-						-solubility_product
-	
-				if (delta > 0.0) then
-					x_max=ceq_matrix(1)
-				else 
-					x_min=ceq_matrix(1)
-				endif 
-	
-			endif
-
-		enddo
-		
-		! now that Mg is fixed - calculate the equilibrium concentration in Zn
-		ceq_matrix(2)	=(c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))&
-						*diffusion_coefficient(1)/diffusion_coefficient(2)&
-						*(ceq_matrix(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction)
-	endif	
-	return
-end subroutine
-
-
-
 subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 								c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
-								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, entropy, enthalpy)
+								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction)
 								
 	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
 	implicit none
@@ -1108,7 +1041,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 	integer, intent(in) :: N_elements, N_steps  
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
 	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient, ceq_matrix
-	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, entropy, enthalpy
+	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction
 	real(pReal), intent(inout), dimension(N_steps+1) :: x_eq_interface
     real(pReal), intent(in), dimension(N_steps+1) :: bins
 	real(pReal) :: xmin, xmax, solubility_product, delta
@@ -1120,7 +1053,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
    interface_equilibrium: 	do i = 0, N_steps
    
    								if (N_elements>1) then   	
-   									solubility_product=exp((entropy/8.314_pReal-enthalpy/8.314_pReal/T))
+   									solubility_product=ceq_matrix(1)**stoechiometry(1)*ceq_matrix(2)**stoechiometry(2)
 						
 									xmin=ceq_matrix(1)! the equilibrium concentration at the interface for a precipitate of size r cannot be lower than that of a flat interface
 									xmax=atomic_volume*na/molar_volume*ceq_precipitate(1) ! the equilibrium concentration at the interface cannot be higher than the concentration in the precipitate

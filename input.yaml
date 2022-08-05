@@ -29,7 +29,7 @@ solute_diffusion0: [1.49e-5, 1.49e-5] # prefactor diffusion coefficient Mg, Zn [
 solute_migration_energy: [126.5e+3,126.5e+3] # activation energy for solute diffusion (here taken identical for Mg and Zn)
 enthalpy: 290.324e+3 # enthalpy of formation precipitate J/mol 7075 fitted from Thermocalc equilibrium
 entropy: 62.24716 # entropy precipitate J/mol/K 7075
-
+c_eq: [1.22e-2,5.04e-4]
 
 #Vacancy model inputs
 
