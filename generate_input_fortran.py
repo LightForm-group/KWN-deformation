@@ -26,8 +26,6 @@ with open('input.dat', 'w') as f:
 		f.write( "%.d \n" % parsed_yaml_file['stoichiometry'][0])
 		f.write( "%.d \n" % parsed_yaml_file['stoichiometry'][1])
 		f.write( "%.d \n" % parsed_yaml_file['stoichiometry'][2])
-		f.write( "%.5e \n" % parsed_yaml_file['enthalpy'])
-		f.write( "%.5e \n" % parsed_yaml_file['entropy'])
 		f.write( "%.3e \n" % parsed_yaml_file['vacancy_sink_spacing'])
 		f.write( "%.3e \n" % parsed_yaml_file['vacancy_diffusion0'])
 		f.write( "%.3e \n" % parsed_yaml_file['jog_formation_energy'])
@@ -49,6 +47,8 @@ with open('input.dat', 'w') as f:
 		f.write( "%.4e \n" % parsed_yaml_file['A'])
 		f.write( "%.4e \n" % parsed_yaml_file['Q_stress'])
 		f.write( "%.4e \n" % parsed_yaml_file['n'])
+		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][0])
+		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][1])
 		
 		
 
