@@ -34,11 +34,11 @@ To run the code :
 3. The outputs are written in textfiles and can be visualised using the attached Jupyter notebook.  
 
 
-Some examples of input files canb= be found in the "example" directory: 
+Some examples of input files can be found in the "example" directory: 
 - with deformation  
    - for two solute elements
    - for binary alloys 
 - without deformation 
-   - or two solute elements
+   - for two solute elements
    - for binary alloys 
    
