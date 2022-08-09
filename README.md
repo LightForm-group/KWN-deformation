@@ -31,4 +31,14 @@ If used with Windows, the fortran file (KWN_with_deformation.f90) should be reco
 To run the code :  
 1. Fill or modify the "input.yaml" file with input corresponding to the model described in ref. [3].
 2. Run ./run_kwn.sh in a command line.  
-3. The outputs are written in textfiles and can be visualised using the attached Jupyter notebook.   
+3. The outputs are written in textfiles and can be visualised using the attached Jupyter notebook.  
+
+
+Some examples of input files canb= be found in the "example" directory: 
+- with deformation  
+   - for two solute elements
+   - for binary alloys 
+- without deformation 
+   - or two solute elements
+   - for binary alloys 
+   
