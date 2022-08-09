@@ -24,7 +24,8 @@ A classical KWN framework is used to calculate the precipitation kinetics and th
 The effect of deformation on excess vacancies is considered via a phenomenological model.    
 
 
-The code has been written in MacOS 11.6 and compiled with ifort.  
+The code has been written in MacOS 11.6 and compiled with ifort. 
+If used with Windows, the fortran file (KWN_with_deformation.f90) should be recompiled with ifort. 
 
   
 To run the code :  
