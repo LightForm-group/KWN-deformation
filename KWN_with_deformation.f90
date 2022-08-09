@@ -659,14 +659,14 @@ program KWN
 					
 					! if there is deformation, calculate the vacancy related parameters
 					
-					if (prm%strain_rate>0.0) then	
-						flow_stress=sigma_r*asinh(((prm%strain_rate/(A))*exp(Q_stress/8.314/T))**(1/n))
-						c_thermal_vacancy=23.0*exp(-prm%vacancy_energy/kB/T)
-						c_j=exp(-prm%jog_formation_energy/kB/T)
-						strain=prm%strain_rate*stt%time(en)	
-						!from Detemple 1995 Physical Review B - Condensed Matter and Materials Physics, 52(1), 125–133.
-						dislocation_density=prm%rho_s*(1- (sqrt(prm%rho_s)-sqrt(prm%rho_0))/sqrt(prm%rho_s)*exp(-1.0/2.0*86*(strain))  )**2	
-					endif				     
+
+					flow_stress=sigma_r*asinh(((prm%strain_rate/(A))*exp(Q_stress/8.314/T))**(1/n))
+					c_thermal_vacancy=23.0*exp(-prm%vacancy_energy/kB/T)
+					c_j=exp(-prm%jog_formation_energy/kB/T)
+					strain=prm%strain_rate*stt%time(en)	
+					!from Detemple 1995 Physical Review B - Condensed Matter and Materials Physics, 52(1), 125–133.
+					dislocation_density=prm%rho_s*(1- (sqrt(prm%rho_s)-sqrt(prm%rho_0))/sqrt(prm%rho_s)*exp(-1.0/2.0*86*(strain))  )**2	
+			     
           
     				! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]			 
 					production_rate = 	prm%vacancy_generation*flow_stress*prm%atomic_volume/prm%vacancy_energy*prm%strain_rate &
@@ -675,6 +675,8 @@ program KWN
 					annihilation_rate =	prm%vacancy_diffusion0*exp(-prm%vacancy_migration_energy/kB/T) &
 										*(dislocation_density/prm%dislocation_arrangement**2+1.0/prm%vacancy_sink_spacing**2)*stt%c_vacancy(en)    
 				
+  					  					
+  					
   					! variation in vacancy concentration
   					dot%c_vacancy(en) = production_rate-annihilation_rate
   					
@@ -682,12 +684,11 @@ program KWN
   					stt%c_vacancy(en) = stt%c_vacancy(en)+dot%c_vacancy(en)*dt
 					
 					!update the diffusion coefficient as a function of the vacancy concentration 
+					! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
   					diffusion_coefficient = prm%diffusion0*exp(-(prm%migration_energy )/T/kb)&
   	 										*(1.0+stt%c_vacancy(en)/c_thermal_vacancy  ) &
   	 										+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
   	 						 				*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb) 
-  	
-  	
 	   
     				! calculate nucleation rate
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
