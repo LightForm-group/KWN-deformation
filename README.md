@@ -13,8 +13,8 @@ References:
  [3] Bignon, M., Shanthraj, P., & Robson, J. D. (2022). Acta Materialia, 234, 118036. https://doi.org/10.1016/J.ACTAMAT.2022.118036   
  [4] Deschamps, A., & De Geuser, F. (2011). Journal of Applied Crystallography, 44(2), 343–352. https://doi.org/10.1107/S0021889811003049  
  [5] Perez, M. (2005). Scripta Materialia, 52(8), 709–712. https://doi.org/10.1016/j.scriptamat.2004.12.026  
- [6] Nicolas, M., & Deschamps, A. (2003).  Acta Materialia, 51(20), 6077–6094. https://doi.org/10.1016/S1359-6454(03)00429-4  
-  
+ [6] Nicolas, M., & Deschamps, A. (2003).  Acta Materialia, 51(20), 6077–6094. https://doi.org/10.1016/S1359-6454(03)00429-4    
+ [7] Robson, J. D. (2004). Modelling the evolution of particle size distribution during nucleation, growth and coarsening. Materials Science and Technology, 20(4), 441–448. https://doi.org/10.1179/026708304225016725    
 -------------------------------------------------------------------------------------------   
 KWN model with external deformation considered via the amount of excess vacancies  
 -------------------------------------------------------------------------------------------   
@@ -39,6 +39,7 @@ Some examples of input files can be found in the "example" directory:
    - for two solute elements
    - for binary alloys 
 - without deformation 
-   - for two solute elements
-   - for binary alloys 
+   - for two solute elements (Al-Zn-Mg)
+   - for a binary alloy (fictive Al-Mg). 
+   - for a Cu-Co binary alloy (reproduces result of ref [7]). 
    
