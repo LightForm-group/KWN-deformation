@@ -190,6 +190,7 @@ program KWN
 	! start to allocate the variables
 	N_elements=2 ! number of solute elements in the precipitate
 	
+	
 	allocate(prm%migration_energy(N_elements), source=0.0_pReal)	
 	allocate(prm%diffusion0(N_elements), source=0.0_pReal)	
 	allocate(prm%c0_matrix(N_elements), source=0.0_pReal)
@@ -695,12 +696,23 @@ program KWN
 
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
                      / 2.0_pReal/PI/radius_crit/radius_crit
-
-   					beta_star = 4.0_pReal*PI&
-              					* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-              					*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+					
+					
+					! expression of beta star for ternary alloys
+					if (dst%c_matrix(2,en)>0) then
+   						beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+              		! expression of beta star for binary alloys
+              		else
+              			beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+              		endif
+              		
 
     				incubation_time =  2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+    				print*, 'Incubation time', incubation_time
          
     				if (stt%time(en) > 0.0_pReal) then
       					nucleation_rate =   nucleation_site_density*zeldovich_factor*beta_star &
@@ -752,9 +764,17 @@ program KWN
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
                      					/ 2.0_pReal/PI/radius_crit/radius_crit
     				
-    				beta_star = 4.0_pReal*PI&
-             		* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-              		*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+					! expression of beta star for ternary alloys
+					if (dst%c_matrix(2,en)>0) then
+   						beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+              		! expression of beta star for binary alloys
+              		else
+              			beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+              		endif
    
     				incubation_time =  2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
              
@@ -809,12 +829,20 @@ program KWN
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
                      				/ 2.0_pReal/PI/radius_crit/radius_crit
-    				beta_star = 4.0_pReal*PI&
-              					* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-              					*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+					! expression of beta star for ternary alloys
+					if (dst%c_matrix(2,en)>0) then
+   						beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+              		! expression of beta star for binary alloys
+              		else
+              			beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+              		endif
    					incubation_time =  2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
     
-    				incubation_time=0.0
+
     			
           
     				if (stt%time(en) > 0.0_pReal) then
@@ -833,6 +861,7 @@ program KWN
      		 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
      		  								stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  &
      		  								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit ) 
+
 
 
     				dot%precipitate_density(0,en)=0.0_pReal
@@ -894,7 +923,7 @@ program KWN
     				print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
    					print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
     				print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
-					print*, 'Nucleation rate :/micron^3 ', nucleation_rate*1.0e-18
+					print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
    	
  
    					! Adapt time step so that the outputs do not vary to much between too time steps       
@@ -1052,9 +1081,13 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 	xmax=1.0_pReal
 	
    interface_equilibrium: 	do i = 0, N_steps
-   
-   								if (N_elements>1) then   	
+   								
+   								! the solubility product is only necessary in a ternary alloy as the interface energy has a simple expression for a binary alloy
+   								if (stoechiometry(2)>0) then   	
+   								
+   									
    									solubility_product=ceq_matrix(1)**stoechiometry(1)*ceq_matrix(2)**stoechiometry(2)
+
 						
 									xmin=ceq_matrix(1)! the equilibrium concentration at the interface for a precipitate of size r cannot be lower than that of a flat interface
 									xmax=atomic_volume*na/molar_volume*ceq_precipitate(1) ! the equilibrium concentration at the interface cannot be higher than the concentration in the precipitate
@@ -1151,7 +1184,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
       				radiusC = bins(bin  )
       				radiusL = bins(bin-1)
       				radiusR = bins(bin+1)
-        			if (radius_crit > radiusL .and. radius_crit < radiusC) then
+        			if (radius_crit >= radiusL .and. radius_crit < radiusC) then
                     	dot_precipitate_density(bin) = dot_precipitate_density(bin) &
                                         			+ nucleation_rate/(radiusC - radiusL)                        
         			endif   
