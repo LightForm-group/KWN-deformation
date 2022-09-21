@@ -307,10 +307,18 @@ program KWN
 	write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")'), int(T)-273, prm%strain_rate
 
 	!! initialise the bins for the size distribution
-	! log spacing between the bins
+	! SAM: Adjusted binning
+	!---------------------------------------------------------------------------------------------------------------------------------
 	kwnbins_init: do i = 0, prm%kwn_nSteps
-		prm%bins(i) = 10.0_pReal**(real(i,pReal)*prm%kwn_stepsize + prm%kwn_step0)
+		if (prm%kwn_step0 < 0.0) then
+			! if initial step is smaller than 0 then make log bins
+			prm%bins(i) = 10**(real(i,pReal)*prm%kwn_stepsize + prm%kwn_step0)
+		else
+			! otherwise linear bins are used
+			prm%bins(i) = real(i,pReal)*prm%kwn_stepsize + prm%kwn_step0
+		endif
 	enddo kwnbins_init
+	!---------------------------------------------------------------------------------------------------------------------------------
 
 	!initialize some outputs
 	growth_rate_array=0.0*growth_rate_array
@@ -1057,7 +1065,7 @@ program KWN
 										time_record =time_record+10**(INT(LOG10(stt%time(en)))-1)
 
 						      endif
-									
+
     	   				endif
  					endif
 	end do loop_time
@@ -1146,7 +1154,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 	real(pReal), intent(in) :: atomic_volume, na, molar_volume,  nucleation_rate
 	real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density(N_steps)
 	real(pReal), intent(inout), dimension(N_steps-1) :: growth_rate_array
-	real(pReal), intent(out)::  radius_crit
+	real(pReal), intent(inout)::  radius_crit
 	real(pReal) :: radiusC, radiusL, radiusR, interface_c, growth_rate, flux
 	integer :: bin
 
