@@ -594,7 +594,7 @@ program KWN
 
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 
-		write(1,*), '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
+		write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
 		!record initial state
 		results(1,1)=stt%time(en)
 		results(1,2)=dst%avg_precipitate_radius(en)*1.0e9 !in nm
@@ -624,19 +624,19 @@ program KWN
 	filename=trim(filename)//trim(filesuffix)
 
 	open(1, file = filename,  ACTION="write", position="append")
-		write(1, 601), stt%time(en), diffusion_coefficient(1)
+		write(1, 601) stt%time(en), diffusion_coefficient(1)
 	close(1)
 
 	filename='vacancies_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
-		write(1, 1001), stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
+		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 	close(1)
 
 	filename='dislocation_density_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
-		write(1, 901), stt%time(en), dislocation_density
+		write(1, 901) stt%time(en), dislocation_density
 	close(1)
 
 
@@ -1035,28 +1035,28 @@ program KWN
            					filename=trim(filename)//trim(filesuffix)
 
         					open(2, file = filename,  ACTION="write", STATUS="replace")
-       			 				WRITE(2,'(E40.15)'), stt%time(en), stt%precipitate_density(:,en)
+       			 				WRITE(2,'(E40.15)') stt%time(en), stt%precipitate_density(:,en)
         					close(2)
 
 
         			    	filename='diffusion_coefficient_'
            					filename=trim(filename)//trim(filesuffix)
 							open(1, file = filename,  ACTION="write", position="append")
-		 						write(1, 601), stt%time(en), diffusion_coefficient(1)
+		 						write(1, 601) stt%time(en), diffusion_coefficient(1)
 		 						601 FORMAT(2E40.6)
 		 					close(1)
 
 		 					filename='vacancies_'
 		 					filename=trim(filename)//trim(filesuffix)
 							open(1, file = filename,  ACTION="write", position="append")
-								write(1, 1001), stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
+								write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 								1001 FORMAT(4E40.6)
 							close(1)
 
 							filename='dislocation_density_'
            					filename=trim(filename)//trim(filesuffix)
 		 					open(1, file = filename,  ACTION="write", position="append")
-		 						write(1, 901), stt%time(en), dislocation_density
+		 						write(1, 901) stt%time(en), dislocation_density
 		 						901 FORMAT(3E40.6)
 		 					close(1)
 
