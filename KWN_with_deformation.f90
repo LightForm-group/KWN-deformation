@@ -716,6 +716,12 @@ program KWN
               			beta_star = 4.0_pReal*PI&
               						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
               						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+!-----------------------------------------------------------------------------------------------------------------------------------
+										! SAM: Added method to calculate the critical radius explicitly
+										deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
+
+										radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
+!-----------------------------------------------------------------------------------------------------------------------------------
               		endif
 
 
@@ -1070,10 +1076,6 @@ program KWN
  					endif
 	end do loop_time
 
-
-
-
-
 end program KWN
 
 
@@ -1191,8 +1193,13 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 
     				enddo kwnbins_growth
 
-    			!calculate the critical radius as the bin at which the growth rate is zero
-    			radius_crit = bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))
+						!calculate the critical radius as the bin at which the growth rate is zero for ternary alloys
+						if (c_matrix(2)>0) then
+
+							radius_crit = bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))
+
+						endif
+
 
     nucleation: do bin = 1, N_Steps-1
 
