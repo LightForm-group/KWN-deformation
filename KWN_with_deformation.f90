@@ -147,6 +147,7 @@ program KWN
 		tau_kwn, &  !contribution of precipitates and solid solution hardening to the flow stress
 		sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
 		A, &  ! constant in the sinepowerlaw for flow stress  [/s]
+		incubation, & ! incubation prefactor either 0 or 1
 		Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
 		n ! stress exponent in the sinepower law for flow stress
 
@@ -285,6 +286,7 @@ program KWN
 	READ(1,*) n !exponent in sinepower law for stress
 	READ(1,*) prm%ceq_matrix(1) !equilibrium concentration in the matrix
 	READ(1,*) prm%ceq_matrix(2) !equilibrium concentration in the matrix
+	READ(1,*) incubation !incubation prefactor, either 0 or 1
 	CLOSE(1)
 
 
@@ -304,7 +306,7 @@ program KWN
 	dt=min(dt_max, dt)
 
 	! define the output file suffix (contains T in °C and strain rate in /s)
-	write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")'), int(T)-273, prm%strain_rate
+	write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(T)-273, prm%strain_rate
 
 	!! initialise the bins for the size distribution
 	! SAM: Adjusted binning
@@ -725,7 +727,7 @@ program KWN
               		endif
 
 
-    				incubation_time =  2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+    				incubation_time =  incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
     				print*, 'Incubation time', incubation_time
 
     				if (stt%time(en) > 0.0_pReal) then
@@ -790,7 +792,7 @@ program KWN
               						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
               		endif
 
-    				incubation_time =  2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+    				incubation_time = incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
 
     				if (stt%time(en) > 0.0_pReal) then
       					nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
@@ -854,7 +856,7 @@ program KWN
               						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
               						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
               		endif
-   					incubation_time =  2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+   					incubation_time =  incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
 
 
 
@@ -937,8 +939,8 @@ program KWN
     				print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
    					print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
     				print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
-					print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
-
+						print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
+						print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
 
    					! Adapt time step so that the outputs do not vary to much between too time steps
     				!if  either:
