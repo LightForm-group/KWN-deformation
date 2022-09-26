@@ -436,7 +436,7 @@ program KWN
 
 	!Write the initial precipitate distribution in a textfile
 
-	filename='initial_precipitation_distribution_'
+	filename='results/initial_precipitation_distribution_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 		write(1,*) ' # Bin [m], Precipitate density distribution [/m^4]'
@@ -465,25 +465,23 @@ program KWN
 	!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
 	call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
 								prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en))
+								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
 	!calculate the initial growth rate of precipitates of all sizes
 	call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
 	!the critical radius for dissolution if calculated from the precipitate growth rate array - display it
-	print*, 'radius crit:', radius_crit*1,0e9, ' nm'
-
-
+	print*, 'radius crit:', radius_crit*1.0e9, ' nm'
 
 	! record the temperature (for versions where there would be a temperature ramp for example)
-	filename='temperature_'
+	filename='results/temperature_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1,file = filename,  ACTION="write", STATUS="replace" )
 		write(1,*) '# Time [s], Temperature [K]'
 	close(1)
 
 	! record the diffusion coefficient
-	filename='diffusion_coefficient_'
+	filename='results/diffusion_coefficient_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 		write(1,*) '# Time [s], Diffusion coefficient [m^2/s] '
@@ -491,7 +489,7 @@ program KWN
 
 
 	! record the number of excess vacancies
-	filename='vacancies_'
+	filename='results/vacancies_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 		write(1,*) '# Time [s], c_{ex}/c_{th}, total number of produced vacancies/c_{th}, total number of annihilated vacancies /c_{th}'
@@ -500,7 +498,7 @@ program KWN
 
 
 	! record the dislocation density
-	filename='dislocation_density_'
+	filename='results/dislocation_density_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename, ACTION="write", STATUS="replace")
 		write(1,*) '# Time [s], dislocation density [/m^2]'
@@ -510,7 +508,7 @@ program KWN
 
 
 	! Write all the input parameters in a file
-	filename='KWN_parameters_'
+	filename='results/KWN_parameters_'
 	filename=trim(filename)//trim(filesuffix)
 		open(201,file= filename,  ACTION="write", STATUS="replace")
 
@@ -591,7 +589,7 @@ program KWN
 
 
 	! this file will be used to store most of the results
-	filename='kinetics_data_'
+	filename='results/kinetics_data_'
 	filename=trim(filename)//trim(filesuffix)
 
 	open(1, file = filename,  ACTION="write", STATUS="replace")
@@ -622,20 +620,20 @@ program KWN
 
 
 
-	filename='diffusion_coefficient_'
+	filename='results/diffusion_coefficient_'
 	filename=trim(filename)//trim(filesuffix)
 
 	open(1, file = filename,  ACTION="write", position="append")
 		write(1, 601) stt%time(en), diffusion_coefficient(1)
 	close(1)
 
-	filename='vacancies_'
+	filename='results/vacancies_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
 		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 	close(1)
 
-	filename='dislocation_density_'
+	filename='results/dislocation_density_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
 		write(1, 901) stt%time(en), dislocation_density
@@ -719,7 +717,7 @@ program KWN
               						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
               						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
 !-----------------------------------------------------------------------------------------------------------------------------------
-										! SAM: Added method to calculate the critical radius explicitly
+										! SAM: Added method to calculate the  explicitly
 										deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
 
 										radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
@@ -1024,7 +1022,7 @@ program KWN
     						endif
         			  		results(1,5)=radius_crit*1.0e9
 
-        			  		filename='kinetics_data_'
+        			  		filename='results/kinetics_data_'
            			  		filename=trim(filename)//trim(filesuffix)
 
           			  		open(1, file = filename,  ACTION="write", position="append")
@@ -1033,7 +1031,7 @@ program KWN
         			  		close(1)
 
         			 		! writes the current distribution
-        					filename='precipitation_distribution_'
+        					filename='results/precipitation_distribution_'
            					filename=trim(filename)//trim(filesuffix)
 
         					open(2, file = filename,  ACTION="write", STATUS="replace")
@@ -1041,21 +1039,21 @@ program KWN
         					close(2)
 
 
-        			    	filename='diffusion_coefficient_'
+        			    	filename='results/diffusion_coefficient_'
            					filename=trim(filename)//trim(filesuffix)
 							open(1, file = filename,  ACTION="write", position="append")
 		 						write(1, 601) stt%time(en), diffusion_coefficient(1)
 		 						601 FORMAT(2E40.6)
 		 					close(1)
 
-		 					filename='vacancies_'
+		 					filename='results/vacancies_'
 		 					filename=trim(filename)//trim(filesuffix)
 							open(1, file = filename,  ACTION="write", position="append")
 								write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 								1001 FORMAT(4E40.6)
 							close(1)
 
-							filename='dislocation_density_'
+							filename='results/dislocation_density_'
            					filename=trim(filename)//trim(filesuffix)
 		 					open(1, file = filename,  ACTION="write", position="append")
 		 						write(1, 901) stt%time(en), dislocation_density
@@ -1083,7 +1081,7 @@ end program KWN
 
 subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 								c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
-								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction)
+								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, misfit_energy)
 
 	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
 	implicit none
@@ -1091,7 +1089,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 	integer, intent(in) :: N_elements, N_steps
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
 	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient, ceq_matrix
-	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction
+	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
 	real(pReal), intent(inout), dimension(N_steps+1) :: x_eq_interface
     real(pReal), intent(in), dimension(N_steps+1) :: bins
 	real(pReal) :: xmin, xmax, solubility_product, delta
@@ -1133,7 +1131,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 									enddo
 
 								else
-									x_eq_interface(i) =ceq_matrix(1)*exp(2.0*molar_volume*gamma_coherent/R/T/bins(i)/ceq_precipitate(1)) ! Gibbs Thomson effect for a precipitate with a single alloying element
+									x_eq_interface(i) =ceq_matrix(1)*exp((2.0*molar_volume*gamma_coherent/(R*T*bins(i)*ceq_precipitate(1)))+molar_volume*misfit_energy/(R*T)) ! Gibbs Thomson effect for a precipitate with a single alloying element
 
 								endif
 
@@ -1200,6 +1198,8 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 
 							radius_crit = bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))
 
+						else
+							print*, '0 Growth bin:', bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))*1.0e9, 'nm'
 						endif
 
 
