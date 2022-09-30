@@ -2,8 +2,9 @@
 #Deformation conditions
 T: 423 # temperature in K
 strain_rate: 1.0e-4  #/s - set to zero for static precipitation
+incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
 time: 10000 #total deformation time [s]
-output_time_step: 0.1 # the outputs will be generated for this time step 
+output_time_step: 0.1 # the outputs will be generated for this time step
 
 
 #Initial distribution
@@ -20,7 +21,7 @@ stoichiometry: [5, 7, 6] #stoichiometry of the precipitate  Mg, Zn, Al (here it 
 
 
 #Kinetics model inputs
-lattice_parameter: 4.0695e-10 # lattice parameter of the product phase (m)-> this one needs to be changed 
+lattice_parameter: 4.0695e-10 # lattice parameter of the product phase (m)-> this one needs to be changed
 atomic_volume: 1.66e-29 # atomic volume of matrix (m^3)
 molar_volume: 1.0e-5 # molar volume of precipitating phase (m^3/mol)
 misfit_energy: 0.0 # elastic misfit energy (J/m^3)  11.422e+6
@@ -51,11 +52,8 @@ n: 6.68309
 
 
 
-## KWN discretisation 
+## KWN discretisation
 kwn_step0: -9.30          # starting bin radius in logscale (m)
 kwn_stepsize: 0.01          # spacing between bins in logscale (m)
 kwn_nsteps: 100             # no. of radius bins
 dt_max: 0.01 #maximum time increment  [s]
-
-
-

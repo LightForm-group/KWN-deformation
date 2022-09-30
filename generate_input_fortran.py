@@ -49,19 +49,4 @@ with open('input.dat', 'w') as f:
 		f.write( "%.4e \n" % parsed_yaml_file['n'])
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][0])
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][1])
-		
-		
-
-
-
-
-		
-		
-		
-		
-		
-
-		
-		
-
-
+		f.write( "%.d \n" % parsed_yaml_file['incubation'])
