@@ -757,7 +757,15 @@ program KWN
     				stt%precipitate_density(0,en)=0.0_pReal
     				stt%precipitate_density(1,en)=0.0_pReal
 
-
+					
+					!update kinetics with this new precipitate growth
+					dst%precipitate_volume_frac(en) = 0.0_pReal
+    				dst%total_precipitate_density(en) = 0.0_pReal
+    				dst%avg_precipitate_radius(en) = 0.0_pReal
+					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
+	
+	
+					
   					! Runge Kutta 4th order to calculate the derivatives
 
   					! https://en.wikipedia.org/wiki/Runge–Kutta_methods
@@ -768,16 +776,26 @@ program KWN
 
   					h=dt
   					k1=dot%precipitate_density(:,en)
-
-  					
+  								
   					stt%time(en)=stt%time(en)+h/2.0
   					stt%precipitate_density(:,en)=temp_precipitate_density+h/2.0*k1
+  					
+  					
 
-
+					! calculate precipitate growth and populate the bins 
    					call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
     		 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
     		 								stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,&
     		   								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
+    		   		
+    		   		! update kinetics (mean radius, vf, supersaturation, precipitate density in all bins)
+    		   		dst%precipitate_volume_frac(en) = 0.0_pReal
+    				dst%total_precipitate_density(en) = 0.0_pReal
+    				dst%avg_precipitate_radius(en) = 0.0_pReal
+					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
+	
+	
+    		   		!recalculate the nucleation rate (since supersaturation has changed)						
 
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
@@ -809,15 +827,6 @@ program KWN
     				endif
 
 
-    				dot%precipitate_density=0.0*dot%precipitate_density
-
-    				call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
-    		 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-    		 								stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, &
-    		 	 							dst%c_matrix(:,en), growth_rate_array, radius_crit )
-
-
-
     				dot%precipitate_density(0,en)=0.0_pReal
     				dot%precipitate_density(1,en)=0.0_pReal
     				stt%precipitate_density(0,en)=0.0_pReal
@@ -832,6 +841,45 @@ program KWN
     	 									x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
     	 									stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
     	  									diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
+    	  			
+    	  			! update kinetics (mean radius, vf, supersaturation, precipitate density in all bins)
+    		   		dst%precipitate_volume_frac(en) = 0.0_pReal
+    				dst%total_precipitate_density(en) = 0.0_pReal
+    				dst%avg_precipitate_radius(en) = 0.0_pReal
+					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
+	
+	    		   		!recalculate the nucleation rate (since supersaturation has changed)						
+
+    				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
+    				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
+                     					/ 2.0_pReal/PI/radius_crit/radius_crit
+
+					! expression of beta star for ternary alloys
+					if (dst%c_matrix(2,en)>0) then
+   						beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+              		! expression of beta star for binary alloys
+              		else
+              			beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+              		endif
+
+    				incubation_time = incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+
+    				if (stt%time(en) > 0.0_pReal) then
+      					nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
+                      	* exp( &
+                        - 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
+                        - incubation_time/stt%time(en) )
+
+
+   					else
+      					nucleation_rate = 0.0_pReal
+    				endif
+
+	
 
     				! empty the first bin to avoid precipitate accumulation
     				dot%precipitate_density(0,en)=0.0_pReal
@@ -844,7 +892,22 @@ program KWN
   					! Runge Kutta k4 calculation
   					stt%precipitate_density(:,en)=temp_precipitate_density+h*k3
 					stt%time(en)= stt%time(en) +h/2.0
+					
+					!calculate precipitate growth rate in all bins
+     				call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
+     		 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+     		  								stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  &
+     		  								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
+
+
+					! update kinetics (mean radius, vf, supersaturation, precipitate density in all bins)
+    		   		dst%precipitate_volume_frac(en) = 0.0_pReal
+    				dst%total_precipitate_density(en) = 0.0_pReal
+    				dst%avg_precipitate_radius(en) = 0.0_pReal
+					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
+					
+					!recalculate nucleation rate
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
                      				/ 2.0_pReal/PI/radius_crit/radius_crit
@@ -875,13 +938,6 @@ program KWN
     				endif
 
     				dot%precipitate_density=0.0*dot%precipitate_density
-    				!calculate precipitate growth rate in all bins
-     				call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
-     		 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-     		  								stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  &
-     		  								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
-
-
 
     				dot%precipitate_density(0,en)=0.0_pReal
     				dot%precipitate_density(1,en)=0.0_pReal
@@ -894,50 +950,14 @@ program KWN
     				!Runge Kutta, calculate precipitate density in all bins (/m^4)
     				stt%precipitate_density(:,en)=temp_precipitate_density + h/6.0*(k1+2.0*k2+2.0*k3+k4)
 
-    				!stt%precipitate density contains all information to calculate mean radius, volume fraction and avg radius - calculate them now
+				
+					! stt%precipitate density contains all information to calculate mean radius, volume fraction and avg radius - calculate them now
     				dst%precipitate_volume_frac(en) = 0.0_pReal
     				dst%total_precipitate_density(en) = 0.0_pReal
     				dst%avg_precipitate_radius(en) = 0.0_pReal
-
-					! update radius, total precipitate density and volume fraction
-
-					kwnbins:	do bin=1,prm%kwn_nSteps
-   									radiusL = prm%bins(bin-1)
-      								radiusR = prm%bins(bin  )
-
-    								!update precipitate density
-    								dst%total_precipitate_density = dst%total_precipitate_density &
-   								   									+ stt%precipitate_density(bin,en) &
-   								   									*(radiusR - radiusL)
-   									!update average radius
-    								dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
-                                     								+ stt%precipitate_density(bin,en) &
-                                     								* (radiusR**2.0_pReal - radiusL**2.0_pReal)/2.0_pReal ! at that stage in m/m^3
-   									!update volume fraction
-
-    								dst%precipitate_volume_frac(en) = dst%precipitate_volume_frac(en) &
-                                      								+ 1.0_pReal/6.0_pReal*PI &
-                                      								* (radiusR+ radiusL)**3.0_pReal &
-                                      								* (radiusR - radiusL) &
-                                      								* stt%precipitate_density(bin,en)
-
-
-								enddo kwnbins
-					! mean radius from m/m^3 to m
-      				if (dst%total_precipitate_density(en) > 0.0_pReal) then
-      							dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
-                                     							/ dst%total_precipitate_density(en)
-	 				endif
-
-
-					!update matrix composition
-
-					 dst%c_matrix(:,en) = (prm%c0_matrix(:) - dst%precipitate_volume_frac(en)*prm%ceq_precipitate(:))&
-	 										/(1-dst%precipitate_volume_frac(en))
-
-
-
-
+					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
+					
+					
    					! print*, ''
     				print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
    					print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
@@ -1224,3 +1244,62 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
             	enddo nucleation
 
 end subroutine growth_precipitate
+
+
+
+
+
+
+subroutine update_kinetics(N_elements, N_Steps, bins, precipitate_density, ceq_precipitate, c_matrix, c0_matrix, total_precipitate_density, volume_fraction, average_radius)
+	
+	implicit none
+
+	integer, parameter :: pReal = selected_real_kind(25)
+	integer, intent(in) :: N_Steps, N_elements
+	real(pReal), intent(in), dimension(N_steps) :: bins
+	real(pReal), intent(inout), dimension(N_steps) :: precipitate_density !/m^4 - density in all bins
+	real(pReal), intent(inout), dimension(N_elements) :: ceq_precipitate, c_matrix, c0_matrix
+	real(pReal), intent(inout) :: total_precipitate_density, volume_fraction, average_radius
+	real(pReal) :: radiusC, radiusL, radiusR
+	real(pReal), parameter :: &
+		PI = 3.14159265359_pReal
+	integer :: bin
+					
+					kwnbins:	do bin=1,N_Steps
+   								
+   								
+   									radiusL = bins(bin)
+      								radiusR = bins(bin+1  )
+
+    								!update precipitate density
+    								total_precipitate_density 	= total_precipitate_density &
+   								   									+ precipitate_density(bin) &
+   								   									*(radiusR - radiusL)
+   									!update average radius
+    								average_radius				 =  average_radius &
+                                     								+ precipitate_density(bin) &
+                                     								* (radiusR**2.0_pReal - radiusL**2.0_pReal)/2.0_pReal ! at that stage in m/m^3
+   									!update volume fraction
+
+    								volume_fraction              = volume_fraction &
+                                      								+ 1.0_pReal/6.0_pReal*PI &
+                                      								* (radiusR+ radiusL)**3.0_pReal &
+                                      								* (radiusR - radiusL) &
+                                      								* precipitate_density(bin)
+
+
+								enddo kwnbins
+					! mean radius from m/m^3 to m
+      				if (total_precipitate_density > 0.0_pReal) then
+      							average_radius	= average_radius &
+                                     			/ total_precipitate_density
+	 				endif
+
+
+					!update matrix composition
+
+					 c_matrix = (c0_matrix - volume_fraction*ceq_precipitate)&
+	 										/(1-volume_fraction)
+					print*, 'c_matrix', c_matrix
+
+end subroutine update_kinetics
