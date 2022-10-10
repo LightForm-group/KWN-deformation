@@ -465,13 +465,17 @@ program KWN
 	!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
 	call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
 								prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+								R, x_eq_interface, prm%misfit_energy)
+	
 
+	! initialise the nucleation rate
+	nucleation_rate=0.0_pReal
 	!calculate the initial growth rate of precipitates of all sizes
 	call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
 	!the critical radius for dissolution if calculated from the precipitate growth rate array - display it
 	print*, 'radius crit:', radius_crit*1.0e9, ' nm'
+	print*, 'radius crit method 2:', 2*prm%gamma_coherent*prm%atomic_volume*(5+6+7)/(5*log(dst%c_matrix(1,en)/prm%ceq_matrix(1))+7*log(dst%c_matrix(2,en)/prm%ceq_matrix(2)))
 
 	! record the temperature (for versions where there would be a temperature ramp for example)
 	filename='results/temperature_'
@@ -584,7 +588,7 @@ program KWN
 	stt%time(en)=0.0_pReal
 	! time_record is used to record the results in textfiles
 	time_record=-dt
-	nucleation_rate=0.0_pReal
+	
 	h=dt
 
 
@@ -765,6 +769,7 @@ program KWN
   					h=dt
   					k1=dot%precipitate_density(:,en)
 
+  					
   					stt%time(en)=stt%time(en)+h/2.0
   					stt%precipitate_density(:,en)=temp_precipitate_density+h/2.0*k1
 
@@ -937,8 +942,10 @@ program KWN
     				print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
    					print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
     				print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
-						print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
-						print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
+				    print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
+					print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
+							!the critical radius for dissolution if calculated from the precipitate growth rate array - display it
+					
 
    					! Adapt time step so that the outputs do not vary to much between too time steps
     				!if  either:
@@ -1081,15 +1088,15 @@ end program KWN
 
 subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 								c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
-								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, misfit_energy)
+								bins, gamma_coherent, R,  x_eq_interface, misfit_energy)
 
 	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
 	implicit none
 	integer, parameter :: pReal = selected_real_kind(25)
 	integer, intent(in) :: N_elements, N_steps
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
-	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient, ceq_matrix
-	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
+	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, ceq_matrix
+	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, misfit_energy
 	real(pReal), intent(inout), dimension(N_steps+1) :: x_eq_interface
     real(pReal), intent(in), dimension(N_steps+1) :: bins
 	real(pReal) :: xmin, xmax, solubility_product, delta
@@ -1118,8 +1125,8 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 										!  find the intersection between stoichiometric line and solubility line by dichotomy
 										! delta=0 ==> intersection between stoichiometry and solubility line
 										delta = x_eq_interface(i)**stoechiometry(1)*&
-												((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
-												(x_eq_interface(i)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)&
+												((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*&
+												(x_eq_interface(i)-c_matrix(1))))**stoechiometry(2)&
 												-solubility_product*exp(2.0*molar_volume*gamma_coherent/R/T/bins(i)*real(sum(stoechiometry)) )
 
 										if (delta<0.0_pReal) then
