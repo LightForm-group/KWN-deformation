@@ -57,3 +57,9 @@ kwn_step0: -9.30          # starting bin radius in logscale (m)
 kwn_stepsize: 0.01          # spacing between bins in logscale (m)
 kwn_nsteps: 100             # no. of radius bins
 dt_max: 0.01 #maximum time increment  [s]
+
+#Parameters for yield stress calculation
+k_s: 683.0e+6 #Pa
+k_p: 0.035 # []
+transition_radius: 3.3e-9 #[m]
+M: 2.0 

@@ -149,8 +149,16 @@ program KWN
 		A, &  ! constant in the sinepowerlaw for flow stress  [/s]
 		incubation, & ! incubation prefactor either 0 or 1
 		Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
-		n ! stress exponent in the sinepower law for flow stress
-
+		n, & ! stress exponent in the sinepower law for flow stress
+		yield_stress, & ! calculated yield stress including the effect of precipitates
+		tau_s, & !contribution of solid solution to yield stress
+		tau_d, & ! contribution of dislocations to yield stress
+		tau_p, & ! contribution of precipitates to yield stress
+		k_s, & ! parameter linked to solute strength
+		k_p, & ! parameter linked to precipitate strengthening
+		transition_radius, & !transition radius between bypassing and shearing
+		M !Taylor factor
+		
 	! the 'temp' variables are to store the previous step and adapt the time step at each iteration
 	real(pReal), dimension(:), allocatable ::   &
 		diffusion_coefficient, &  ! diffusion coefficient for Mg and Zn
@@ -287,6 +295,12 @@ program KWN
 	READ(1,*) prm%ceq_matrix(1) !equilibrium concentration in the matrix
 	READ(1,*) prm%ceq_matrix(2) !equilibrium concentration in the matrix
 	READ(1,*) incubation !incubation prefactor, either 0 or 1
+	! parameters to calculate yield stress
+	READ(1,*) k_s
+	READ(1,*) k_p
+	READ(1,*) transition_radius
+	READ(1,*) M
+	
 	CLOSE(1)
 
 
@@ -671,11 +685,14 @@ program KWN
 
 
 					! if there is deformation, calculate the vacancy related parameters
-
-
+					
+					! flow stress, used to calculate the nu;ber of generated vacancies - empirical relation
 					flow_stress=sigma_r*asinh(((prm%strain_rate/(A))*exp(Q_stress/8.314/T))**(1/n))
+					! calculate the amount of vacancies in the absence of any deformation
 					c_thermal_vacancy=23.0*exp(-prm%vacancy_energy/kB/T)
+					! calculate the jog concentration
 					c_j=exp(-prm%jog_formation_energy/kB/T)
+					!total strain since beginning of deformation
 					strain=prm%strain_rate*stt%time(en)
 					!from Detemple 1995 Physical Review B - Condensed Matter and Materials Physics, 52(1), 125–133.
 					dislocation_density=prm%rho_s*(1- (sqrt(prm%rho_s)-sqrt(prm%rho_0))/sqrt(prm%rho_s)*exp(-1.0/2.0*86*(strain))  )**2
@@ -764,7 +781,36 @@ program KWN
     				dst%avg_precipitate_radius(en) = 0.0_pReal
 					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
 	
-	
+					!recalculate the nucleation rate (since supersaturation has changed)						
+
+    				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
+    				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
+                     					/ 2.0_pReal/PI/radius_crit/radius_crit
+
+					! expression of beta star for ternary alloys
+					if (dst%c_matrix(2,en)>0) then
+   						beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+              		! expression of beta star for binary alloys
+              		else
+              			beta_star = 4.0_pReal*PI&
+              						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
+              						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+              		endif
+
+    				incubation_time = incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+
+    				if (stt%time(en) > 0.0_pReal) then
+      					nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
+                      	* exp( &
+                        - 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
+                        - incubation_time/stt%time(en) )
+
+
+   					else
+      					nucleation_rate = 0.0_pReal
+    				endif
 					
   					! Runge Kutta 4th order to calculate the derivatives
 
@@ -795,7 +841,7 @@ program KWN
 					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
 	
 	
-    		   		!recalculate the nucleation rate (since supersaturation has changed)						
+					!recalculate the nucleation rate (since supersaturation has changed)						
 
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
@@ -848,7 +894,7 @@ program KWN
     				dst%avg_precipitate_radius(en) = 0.0_pReal
 					call update_kinetics(N_elements, prm%kwn_nSteps, prm%bins, stt%precipitate_density(:,en),prm%ceq_precipitate(:), dst%c_matrix(:,en), prm%c0_matrix(:), dst%total_precipitate_density(en), dst%precipitate_volume_frac(en), dst%avg_precipitate_radius(en))
 	
-	    		   		!recalculate the nucleation rate (since supersaturation has changed)						
+	    		   	!recalculate the nucleation rate (since supersaturation has changed)						
 
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
@@ -965,6 +1011,21 @@ program KWN
 				    print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
 					print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
 							!the critical radius for dissolution if calculated from the precipitate growth rate array - display it
+					
+					!calculate yield stress
+					
+					tau_s=k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
+					print*, 'tau_s', tau_s*1e-6
+					print*, 'sum c', sum(dst%c_matrix(:,en))
+					!Taylor relation for dislocation contribution
+					tau_d=0.3*mu*prm%burgers*sqrt(dislocation_density)
+					print*, 'tau_d', tau_d*1e-6
+					!precipitate contribution to yield stress
+					!expression only valid if all precipitates are sheared - if not, use an expression depending on the whole distribution
+					tau_p=mu*sqrt(3.0_pReal/2.0_pReal/PI*dst%precipitate_volume_frac(en))*k_p*sqrt(dst%avg_precipitate_radius(en)/transition_radius)
+					print*, 'tau_p', tau_p*1e-6
+					
+					yield_stress = M*(tau_s + sqrt(tau_p**2+tau_d**2))
 					
 
    					! Adapt time step so that the outputs do not vary to much between too time steps
@@ -1085,6 +1146,12 @@ program KWN
 		 					open(1, file = filename,  ACTION="write", position="append")
 		 						write(1, 901) stt%time(en), dislocation_density
 		 						901 FORMAT(3E40.6)
+		 					close(1)
+		 					
+		 					filename='results/yield_stress_'
+           					filename=trim(filename)//trim(filesuffix)
+		 					open(1, file = filename,  ACTION="write", position="append")
+		 						write(1, 901) stt%time(en), yield_stress
 		 					close(1)
 
 
