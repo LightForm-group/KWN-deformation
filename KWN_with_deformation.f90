@@ -229,24 +229,24 @@ program KWN
 
 	! size of these arrays: number of bins
 	allocate(prm%bins(0:prm%kwn_nSteps), source=0.0_pReal)
-	allocate(dot%precipitate_density(prm%kwn_nSteps+1,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
-	allocate(stt%precipitate_density(prm%kwn_nSteps+1,1), source=0.0_pReal)  ! precipitate density in each bin
-	allocate( normalized_distribution_function(prm%kwn_nSteps+1,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
-	allocate(growth_rate_array(prm%kwn_nSteps+1), source=0.0_pReal) ! array containing the growth rate in each bin
-	allocate(x_eq_interface(prm%kwn_nSteps+1), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
-	allocate(temp_x_eq_interface(prm%kwn_nSteps+1), source=0.0_pReal)
-	allocate(temp_precipitate_density(prm%kwn_nSteps+1), source=0.0_pReal)
-	allocate(temp_dot_precipitate_density(prm%kwn_nSteps+1), source=0.0_pReal)
-	allocate(k1(prm%kwn_nSteps+1), source=0.0_pReal) ! Runge Kutta
-	allocate(k2(prm%kwn_nSteps+1), source=0.0_pReal) !
-	allocate(k3(prm%kwn_nSteps+1), source=0.0_pReal)
-	allocate(k4(prm%kwn_nSteps+1), source=0.0_pReal)
+	allocate(dot%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
+	allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
+	allocate( normalized_distribution_function(0:prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
+	allocate(growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
+	allocate(x_eq_interface(prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
+	allocate(temp_x_eq_interface(prm%kwn_nSteps), source=0.0_pReal)
+	allocate(temp_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
+	allocate(temp_dot_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
+	allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge Kutta
+	allocate(k2(prm%kwn_nSteps), source=0.0_pReal) !
+	allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
+	allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
 	allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
 	allocate(stt%c_vacancy (Nmembers), source=0.0_pReal) ! Number of excess vacancies
 	allocate(dot%c_vacancy (Nmembers), source=0.0_pReal) !Time derivative of excess vacancies
 	allocate(temp_c_matrix(N_elements), source=0.0_pReal)
 	allocate(temp_x_eq_matrix(N_elements), source=0.0_pReal)
-	allocate(results(1,7)) ! the results are stored in this array
+	allocate(results(1,8)) ! the results are stored in this array
 
 	ph=1
 
@@ -627,6 +627,11 @@ program KWN
 		write(1, 601) stt%time(en), diffusion_coefficient(1)
 	close(1)
 
+
+    c_thermal_vacancy = 1.0
+    production_rate = 0.0
+    annihilation_rate = 0.0
+
 	filename='results/vacancies_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
@@ -748,9 +753,9 @@ program KWN
 
 
    					! empty the first bin to avoid precipitate accumulation
-    				dot%precipitate_density(0,en)=0.0_pReal
+    				!dot%precipitate_density(0,en)=0.0_pReal
     				dot%precipitate_density(1,en)=0.0_pReal
-    				stt%precipitate_density(0,en)=0.0_pReal
+    				!stt%precipitate_density(0,en)=0.0_pReal
     				stt%precipitate_density(1,en)=0.0_pReal
 
 
@@ -813,9 +818,9 @@ program KWN
 
 
 
-    				dot%precipitate_density(0,en)=0.0_pReal
+    				!dot%precipitate_density(0,en)=0.0_pReal
     				dot%precipitate_density(1,en)=0.0_pReal
-    				stt%precipitate_density(0,en)=0.0_pReal
+    				!stt%precipitate_density(0,en)=0.0_pReal
     				stt%precipitate_density(1,en)=0.0_pReal
  					k2=dot%precipitate_density(:,en)
 
@@ -829,9 +834,9 @@ program KWN
     	  									diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
     				! empty the first bin to avoid precipitate accumulation
-    				dot%precipitate_density(0,en)=0.0_pReal
+    				!dot%precipitate_density(0,en)=0.0_pReal
     				dot%precipitate_density(1,en)=0.0_pReal
-    				stt%precipitate_density(0,en)=0.0_pReal
+    				!stt%precipitate_density(0,en)=0.0_pReal
     				stt%precipitate_density(1,en)=0.0_pReal
 
 					k3=dot%precipitate_density(:,en)
@@ -878,9 +883,9 @@ program KWN
 
 
 
-    				dot%precipitate_density(0,en)=0.0_pReal
+    				!dot%precipitate_density(0,en)=0.0_pReal
     				dot%precipitate_density(1,en)=0.0_pReal
-    				stt%precipitate_density(0,en)=0.0_pReal
+    				!stt%precipitate_density(0,en)=0.0_pReal
     				stt%precipitate_density(1,en)=0.0_pReal
 
     				k4=dot%precipitate_density(:,en)
@@ -1090,8 +1095,8 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
 	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient, ceq_matrix
 	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
-	real(pReal), intent(inout), dimension(N_steps+1) :: x_eq_interface
-    real(pReal), intent(in), dimension(N_steps+1) :: bins
+	real(pReal), intent(inout), dimension(0:N_steps) :: x_eq_interface
+    real(pReal), intent(in), dimension(0:N_steps) :: bins
 	real(pReal) :: xmin, xmax, solubility_product, delta
 	integer :: i
 
@@ -1150,11 +1155,11 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 
 	integer, parameter :: pReal = selected_real_kind(25)
 	integer, intent(in) :: N_Steps, N_elements
-	real(pReal), intent(in), dimension(N_steps) :: bins
+	real(pReal), intent(in), dimension(0:N_steps) :: bins
 	real(pReal), intent(in), dimension(N_steps) :: x_eq_interface, precipitate_density
 	real(pReal), intent(in), dimension(N_elements) :: ceq_precipitate, diffusion_coefficient, c_matrix
 	real(pReal), intent(in) :: atomic_volume, na, molar_volume,  nucleation_rate
-	real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density(N_steps)
+	real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density
 	real(pReal), intent(inout), dimension(N_steps-1) :: growth_rate_array
 	real(pReal), intent(inout)::  radius_crit
 	real(pReal) :: radiusC, radiusL, radiusR, interface_c, growth_rate, flux
