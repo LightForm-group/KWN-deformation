@@ -183,6 +183,7 @@ program KWN
 
 	character*100 :: filename !name of the gile where the outputs will be written
 	character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
+	character*100 :: testfolder !folder where the input file is
 
 	INTEGER :: status ! I/O status
 
@@ -205,6 +206,7 @@ program KWN
 	!!!!!!!!!!!
 	OPEN (UNIT=1, FILE='input.dat', STATUS='OLD', ACTION='READ', IOSTAT=status)
 	print*, status
+	READ(1,*) testfolder
 	READ(1,*, IOSTAT=status) prm%kwn_step0! starting bin radius  (m)
 	print*, status
 	READ(1,*) prm%kwn_stepsize ! spacing between bins (m)
@@ -435,9 +437,9 @@ program KWN
 	endif
 
 	!Write the initial precipitate distribution in a textfile
-
+	testfolder=trim(testfolder)//'/'
 	filename='results/initial_precipitation_distribution_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 		write(1,*) ' # Bin [m], Precipitate density distribution [/m^4]'
 
@@ -475,14 +477,14 @@ program KWN
 
 	! record the temperature (for versions where there would be a temperature ramp for example)
 	filename='results/temperature_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1,file = filename,  ACTION="write", STATUS="replace" )
 		write(1,*) '# Time [s], Temperature [K]'
 	close(1)
 
 	! record the diffusion coefficient
 	filename='results/diffusion_coefficient_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 		write(1,*) '# Time [s], Diffusion coefficient [m^2/s] '
 	close(1)
@@ -490,7 +492,7 @@ program KWN
 
 	! record the number of excess vacancies
 	filename='results/vacancies_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 		write(1,*) '# Time [s], c_{ex}/c_{th}, total number of produced vacancies/c_{th}, total number of annihilated vacancies /c_{th}'
 	close(1)
@@ -499,7 +501,7 @@ program KWN
 
 	! record the dislocation density
 	filename='results/dislocation_density_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename, ACTION="write", STATUS="replace")
 		write(1,*) '# Time [s], dislocation density [/m^2]'
 	close(1)
@@ -509,7 +511,7 @@ program KWN
 
 	! Write all the input parameters in a file
 	filename='results/KWN_parameters_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 		open(201,file= filename,  ACTION="write", STATUS="replace")
 
 			WRITE (201,*) ' '
@@ -590,7 +592,7 @@ program KWN
 
 	! this file will be used to store most of the results
 	filename='results/kinetics_data_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 
@@ -621,7 +623,7 @@ program KWN
 
 
 	filename='results/diffusion_coefficient_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 
 	open(1, file = filename,  ACTION="write", position="append")
 		write(1, 601) stt%time(en), diffusion_coefficient(1)
@@ -633,13 +635,13 @@ program KWN
     annihilation_rate = 0.0
 
 	filename='results/vacancies_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
 		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 	close(1)
 
 	filename='results/dislocation_density_'
-	filename=trim(filename)//trim(filesuffix)
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
 		write(1, 901) stt%time(en), dislocation_density
 	close(1)
@@ -1028,7 +1030,7 @@ program KWN
         			  		results(1,5)=radius_crit*1.0e9
 
         			  		filename='results/kinetics_data_'
-           			  		filename=trim(filename)//trim(filesuffix)
+           			  		filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 
           			  		open(1, file = filename,  ACTION="write", position="append")
     	    	 	  			WRITE(1,13) (results(1,i), i=1,8)
@@ -1037,7 +1039,7 @@ program KWN
 
         			 		! writes the current distribution
         					filename='results/precipitation_distribution_'
-           					filename=trim(filename)//trim(filesuffix)
+           					filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 
         					open(2, file = filename,  ACTION="write", STATUS="replace")
        			 				WRITE(2,'(E40.15)') stt%time(en), stt%precipitate_density(:,en)
@@ -1045,21 +1047,21 @@ program KWN
 
 
         			    	filename='results/diffusion_coefficient_'
-           					filename=trim(filename)//trim(filesuffix)
+           					filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 							open(1, file = filename,  ACTION="write", position="append")
 		 						write(1, 601) stt%time(en), diffusion_coefficient(1)
 		 						601 FORMAT(2E40.6)
 		 					close(1)
 
 		 					filename='results/vacancies_'
-		 					filename=trim(filename)//trim(filesuffix)
+		 					filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 							open(1, file = filename,  ACTION="write", position="append")
 								write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 								1001 FORMAT(4E40.6)
 							close(1)
 
 							filename='results/dislocation_density_'
-           					filename=trim(filename)//trim(filesuffix)
+           					filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 		 					open(1, file = filename,  ACTION="write", position="append")
 		 						write(1, 901) stt%time(en), dislocation_density
 		 						901 FORMAT(3E40.6)
