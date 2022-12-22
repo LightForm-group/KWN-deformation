@@ -235,8 +235,8 @@ program KWN
 	allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
 	allocate( normalized_distribution_function(0:prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
 	allocate(growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
-	allocate(x_eq_interface(prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
-	allocate(temp_x_eq_interface(prm%kwn_nSteps), source=0.0_pReal)
+	allocate(x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
+	allocate(temp_x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal)
 	allocate(temp_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
 	allocate(temp_dot_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
 	allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge Kutta
@@ -327,7 +327,7 @@ program KWN
 	!initialize some outputs
 	growth_rate_array=0.0*growth_rate_array
 	stt%precipitate_density=0.0*stt%precipitate_density
-	dst%total_precipitate_density=0.0_pReal
+	dst%total_precipitate_density(en)=0.0_pReal
 	dst%avg_precipitate_radius(en)=prm%mean_radius_initial
 	dst%precipitate_volume_frac(en)=prm%volume_fraction_initial
 	stt%c_vacancy(en) =0.0_pReal
@@ -410,7 +410,7 @@ program KWN
 			radiusR = prm%bins(bin  )
 
 			!update precipitate density
-			dst%total_precipitate_density 	= 	dst%total_precipitate_density &
+			dst%total_precipitate_density(en) 	= 	dst%total_precipitate_density(en) &
 												+ stt%precipitate_density(bin,en) &
 												*(radiusR - radiusL)
 			!update average radius
@@ -432,9 +432,9 @@ program KWN
 			dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
 											/ dst%total_precipitate_density(en)
 		endif
-
-
 	endif
+
+	
 
 	!Write the initial precipitate distribution in a textfile
 	testfolder=trim(testfolder)//'/'
@@ -444,7 +444,11 @@ program KWN
 		write(1,*) ' # Bin [m], Precipitate density distribution [/m^4]'
 
 		do bin=1,prm%kwn_nSteps
-			write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)/sum(stt%precipitate_density(:,en))
+			if (sum(stt%precipitate_density(:,en))>0.0_pReal) then
+				write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)/sum(stt%precipitate_density(:,en))
+			else
+				write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)
+			endif
 		enddo
 	close(1)
 
@@ -456,8 +460,9 @@ program KWN
 							/(1.0-dst%precipitate_volume_frac(en))
 
 	!calculate initial diffusion coefficient
-	diffusion_coefficient = 	prm%diffusion0*exp(-(prm%migration_energy )/T/kb) 	 +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-								*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)  ! include pipe diffusion
+	diffusion_coefficient = 	prm%diffusion0*exp(-(prm%migration_energy )/T/kb) 	! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+							!	*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)  ! include pipe diffusion
+
 
 
 	temp_diffusion_coefficient=diffusion_coefficient(1)
@@ -690,7 +695,7 @@ program KWN
 
 					annihilation_rate =	prm%vacancy_diffusion0*exp(-prm%vacancy_migration_energy/kB/T) &
 										*(dislocation_density/prm%dislocation_arrangement**2+1.0/prm%vacancy_sink_spacing**2)*stt%c_vacancy(en)
-
+					
 
 
   					! variation in vacancy concentration
@@ -702,9 +707,12 @@ program KWN
 					!update the diffusion coefficient as a function of the vacancy concentration
 					! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
   					diffusion_coefficient = prm%diffusion0*exp(-(prm%migration_energy )/T/kb)&
-  	 										*(1.0+stt%c_vacancy(en)/c_thermal_vacancy  ) &
-  	 										+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-  	 						 				*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)
+  	 										*(1.0+stt%c_vacancy(en)/c_thermal_vacancy  )! &
+  	 									!	+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+  	 						 			!	*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)
+
+
+				
 
     				! calculate nucleation rate
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
@@ -728,6 +736,8 @@ program KWN
 										deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
 
 										radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
+									
+										
 !-----------------------------------------------------------------------------------------------------------------------------------
               		endif
 
@@ -740,6 +750,8 @@ program KWN
                       						* exp( &
                              				- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
                              				- incubation_time/stt%time(en) )
+						print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
+						
 
     				else
       					nucleation_rate = 0.0_pReal
@@ -866,6 +878,7 @@ program KWN
 
 
 
+
     				if (stt%time(en) > 0.0_pReal) then
       						nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
                       		* exp( &
@@ -929,6 +942,7 @@ program KWN
       				if (dst%total_precipitate_density(en) > 0.0_pReal) then
       							dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
                                      							/ dst%total_precipitate_density(en)
+								
 	 				endif
 
 
@@ -946,6 +960,7 @@ program KWN
     				print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
 						print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
 						print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
+						
 
    					! Adapt time step so that the outputs do not vary to much between too time steps
     				!if  either:
@@ -958,7 +973,7 @@ program KWN
     				! go back one step before
 
     					stt%time(en)=stt%time(en)-dt
-    					dst%total_precipitate_density= temp_total_precipitate_density
+    					dst%total_precipitate_density(en)= temp_total_precipitate_density
 						stt%precipitate_density(:,en)=temp_precipitate_density(:)
 						dot%precipitate_density(:,en)=temp_dot_precipitate_density(:)
 						dst%avg_precipitate_radius(en) = temp_avg_precipitate_radius
@@ -1109,7 +1124,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 
    								! the solubility product is only necessary in a ternary alloy as the interface energy has a simple expression for a binary alloy
    								if (stoechiometry(2)>0) then
-
+								!if (1==1) then
 
    									solubility_product=ceq_matrix(1)**stoechiometry(1)*ceq_matrix(2)**stoechiometry(2)
 
@@ -1157,15 +1172,23 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 
 	integer, parameter :: pReal = selected_real_kind(25)
 	integer, intent(in) :: N_Steps, N_elements
-	real(pReal), intent(in), dimension(0:N_steps) :: bins
-	real(pReal), intent(in), dimension(N_steps) :: x_eq_interface, precipitate_density
+	real(pReal), intent(in), dimension(0:N_steps) :: bins, x_eq_interface
+	real(pReal), intent(in), dimension(N_steps) :: precipitate_density
 	real(pReal), intent(in), dimension(N_elements) :: ceq_precipitate, diffusion_coefficient, c_matrix
 	real(pReal), intent(in) :: atomic_volume, na, molar_volume,  nucleation_rate
 	real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density
-	real(pReal), intent(inout), dimension(N_steps-1) :: growth_rate_array
+	real(pReal), intent(inout), dimension(0:N_steps) :: growth_rate_array
 	real(pReal), intent(inout)::  radius_crit
 	real(pReal) :: radiusC, radiusL, radiusR, interface_c, growth_rate, flux
 	integer :: bin
+
+
+
+   ! the growth rate is stored to change the time step in the main program
+	growth_rate_array = diffusion_coefficient(1)/bins&
+	* (c_matrix(1)    - x_eq_interface) &
+	/ (atomic_volume*na/molar_volume*ceq_precipitate(1) - x_eq_interface)
+
 
 
     kwnbins_growth: do bin = 1, N_Steps-1
@@ -1178,13 +1201,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
       					! concentration at the interface between matrix and precipitate of the considered bin
      					interface_c =x_eq_interface(bin)
 	  					! classical growth rate equation
-	  					growth_rate = diffusion_coefficient(1)/radiusC &
-                  					* (c_matrix(1)    - interface_c) &
-                  					/ (atomic_volume*na/molar_volume*ceq_precipitate(1) - interface_c)
-
-     					! the growth rate is stored to change the time step in the main program
-     					growth_rate_array(bin)=growth_rate
-
+	  					growth_rate = growth_rate_array(bin)
 						! if the growth rate is positive, precipitates grow (smaller class -> bigger class) and the flux is positive
       					if (growth_rate > 0.0_pReal) then
         					flux = precipitate_density(bin)*growth_rate
@@ -1198,29 +1215,25 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
       					dot_precipitate_density(bin  ) = dot_precipitate_density(bin ) - flux/(radiusC - radiusL)
       					dot_precipitate_density(bin+1) = dot_precipitate_density(bin+1) + flux/(radiusR - radiusC)
 
-    				enddo kwnbins_growth
-
-						!calculate the critical radius as the bin at which the growth rate is zero for ternary alloys
+    				! populate the class of the critical radius with nucleating particle
+						! in binary alloys, the critical radius can be explicitely calculated and it's made in the main program
+						! for ternary alloys, the critical radius is calculated as the bin at which the growth rate is zero
 						if (c_matrix(2)>0) then
-
-							radius_crit = bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))
-
+						
+							if (growth_rate_array(bin-1)<0 .and. growth_rate_array(bin+1)>0) then
+								radius_crit=radiusC
+									dot_precipitate_density(bin+1) = dot_precipitate_density(bin+1) &
+															+ nucleation_rate/(radiusR - radiusC)
+							endif
 						else
-							print*, '0 Growth bin:', bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))*1.0e9, 'nm'
+							if (radiusL<=radius_crit.and.radiusC>radius_crit) then
+								dot_precipitate_density(bin+1) = dot_precipitate_density(bin+1) &
+															+ nucleation_rate/(radiusR - radiusC)
+							endif
+
 						endif
-
-
-    nucleation: do bin = 1, N_Steps-1
-
-    			! populate the classes with nucleating particle
-      				radiusC = bins(bin  )
-      				radiusL = bins(bin-1)
-      				radiusR = bins(bin+1)
-        			if (radius_crit >= radiusL .and. radius_crit < radiusC) then
-                    	dot_precipitate_density(bin) = dot_precipitate_density(bin) &
-                                        			+ nucleation_rate/(radiusC - radiusL)
-        			endif
-
-            	enddo nucleation
+					
+					
+					enddo kwnbins_growth
 
 end subroutine growth_precipitate
