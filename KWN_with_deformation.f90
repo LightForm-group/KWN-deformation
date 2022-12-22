@@ -233,7 +233,7 @@ program KWN
 	allocate(prm%bins(0:prm%kwn_nSteps), source=0.0_pReal)
 	allocate(dot%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
 	allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
-	allocate( normalized_distribution_function(0:prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
+	allocate( normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
 	allocate(growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
 	allocate(x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
 	allocate(temp_x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal)
@@ -340,11 +340,14 @@ program KWN
 
 
 
-		distribution_function : do i=0, prm%kwn_nSteps
+		distribution_function : do i=1, prm%kwn_nSteps
 								!definition of a log normal distribution
+								radiusL=prm%bins(i-1)
+								radiusR=prm%bins(i)
+								radiusC=(radiusL+radiusR)/2
 									normalized_distribution_function(i,en)	=	1.0_pReal/sqrt(PI*2.0_pReal) &
-																				/shape_parameter/prm%bins(i)	&
-																				*exp(-1.0/2.0*(log(prm%bins(i)/prm%mean_radius_initial)+shape_parameter**2/2)**2/shape_parameter**2)
+																				/shape_parameter/radiusC	&
+																				*exp(-1.0/2.0*(log(radiusC/prm%mean_radius_initial)+shape_parameter**2/2)**2/shape_parameter**2)
 								enddo distribution_function
 
 		print*, normalized_distribution_function
