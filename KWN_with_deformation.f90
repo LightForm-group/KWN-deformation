@@ -2,6 +2,8 @@
 !> @author Madeleine Bignon, University of Manchester
 !> @author Pratheek Shanthraj, University of Manchester
 ! KWN precipitation model including the effect of deformation via excess vacancy concentration
+! Model described in: 
+! Bignon, M., Shanthraj, P., & Robson, J. D. (2022). Acta Materialia, 234, 118036. https://doi.org/10.1016/J.ACTAMAT.2022.118036
 !---------------------------------------------------------------------------------------------------
 !References:
 ! [1] Robson, J. D. (2020). Metallurgical and Materials Transactions A: Physical Metallurgy and Materials Science, 51(10), 5401–5413. https://doi.org/10.1007/s11661-020-05960-5
@@ -50,7 +52,9 @@ program KWN
 				burgers, & !matrice burgers vector
 				jog_formation_energy, & ! formation energy for jogs
 				q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-				solute_strength ! constant related to the solid solution hardening- cf [2]
+				solute_strength, & ! constant related to the solid solution hardening- cf [2]
+				enthalpy, & ! enthalpy of precipitation in J/mol
+				entropy ! entropy of precipitation in J/mol/K
 
 
 		! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
@@ -290,6 +294,8 @@ program KWN
 	CLOSE(1)
 
 
+	prm%entropy=22.61 ! calibrated with experimental data René65
+	prm%enthalpy=62.25e3
 	!!! some conversions
 	prm%migration_energy=prm%migration_energy/na ! convert form J/mol to J/at
 	prm%jog_formation_energy = prm%jog_formation_energy*1.602176634e-19  ! convert from ev to  J/at
@@ -333,7 +339,7 @@ program KWN
 
 
 
-	!Calculated the precipitate density from the initial mean radius and volume fraction for an already existing distribution
+	!Calculate the precipitate density from the initial mean radius and volume fraction for an already existing distribution
 	if (dst%avg_precipitate_radius(en)>0) then
 
 
@@ -454,7 +460,8 @@ program KWN
 							/(1.0-dst%precipitate_volume_frac(en))
 
 	!calculate initial diffusion coefficient
-	diffusion_coefficient = 	prm%diffusion0*exp(-(prm%migration_energy )/T/kb) 	 +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+	diffusion_coefficient = 	prm%diffusion0*exp(-(prm%migration_energy )/T/kb) 	 &
+								+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
 								*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)  ! include pipe diffusion
 
 
@@ -465,10 +472,13 @@ program KWN
 	!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
 	call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
 								prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy, enthalpy, entropy)
 
 	!calculate the initial growth rate of precipitates of all sizes
-	call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
+	call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
+						   x_eq_interface,prm%atomic_volume, na, prm%molar_volume,&
+						   prm%ceq_precipitate, stt%precipitate_density, dot%precipitate_density(:,en),&
+						   nucleation_rate,  diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
 	!the critical radius for dissolution if calculated from the precipitate growth rate array - display it
 	print*, 'radius crit:', radius_crit*1.0e9, ' nm'
@@ -505,7 +515,7 @@ program KWN
 	close(1)
 
 
-
+	
 
 	! Write all the input parameters in a file
 	filename='results/KWN_parameters_'
@@ -566,7 +576,7 @@ program KWN
 			314 FORMAT ('Temperature: ', F7.3, ' [°C]')
 		close(201)
 
-
+	
 
 	!the following are used to store the outputs from the previous iteration
 	temp_total_precipitate_density =dst%total_precipitate_density(en)
@@ -586,7 +596,8 @@ program KWN
 	time_record=-dt
 	nucleation_rate=0.0_pReal
 	h=dt
-
+	
+	
 
 	! this file will be used to store most of the results
 	filename='results/kinetics_data_'
@@ -594,28 +605,38 @@ program KWN
 
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 
-		write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
+		write(1,*) '#Time, [s], Average Radius [nm], &
+					Total precipitate density [/micron^3], &
+					Volume fraction [], Critical radius [nm], Nucleation rate [/micron^3/s]&
+					Concentration in the matrix [at %]'
 		!record initial state
 		results(1,1)=stt%time(en)
 		results(1,2)=dst%avg_precipitate_radius(en)*1.0e9 !in nm
+	 
 		results(1,3)=dst%total_precipitate_density(en)*1.0e-18 !in microns/m3
+		
 		if (results(1,3)<1.0e-30_pReal) then
 			results(1,3)=0.0
 		endif
+
+		
+		
 		results(1,4)=dst%precipitate_volume_frac(en)
 		if (results(1,4)<1.0e-30_pReal) then
 			results(1,4)=0.0
 		endif
+		
+
 		results(1,7:8)=dst%c_matrix(:,en)
 		results(1,6)=nucleation_rate*1.0e-18
 		if (results(1,6)<1.0e-30_pReal) then
 			results(1,6)=0.0
 		endif
 		results(1,5)=radius_crit*1.0e9
-
 		WRITE(1,14) (results(1,i), i=1,8)
 		14 FORMAT(F40.6,F40.6, 6E40.6)
-
+		
+		
 	close(1)
 
 
@@ -630,7 +651,8 @@ program KWN
 	filename='results/vacancies_'
 	filename=trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
-		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
+		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy,&
+		 production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 	close(1)
 
 	filename='results/dislocation_density_'
@@ -1078,10 +1100,65 @@ program KWN
 
 end program KWN
 
+subroutine get_equilibrium(T,  N_elements, N_steps, stoechiometry, &
+	c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
+	bins, gamma_coherent, R,  diffusion_coefficient, volume_fraction, misfit_energy, enthalpy, entropy)
+
+!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
+implicit none
+integer, parameter :: pReal = selected_real_kind(25)
+integer, intent(in) :: N_elements, N_steps
+integer, intent(in), dimension(N_elements+1) :: stoechiometry
+real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient
+real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy, enthalpy, entropy
+real(pReal), intent(inout), dimension(N_elements) ::  ceq_matrix
+real(pReal), intent(in), dimension(N_steps+1) :: bins
+real(pReal) :: xmin, xmax, solubility_product, delta
+integer :: i
+
+xmin=0.0_pReal
+xmax=1.0_pReal
+
+
+
+
+		solubility_product=exp(entropy/8.314_pReal-enthalpy/8.3148_pReal/T)
+
+
+		xmin=0.08pReal! the equilibrium concentration at the interface for a precipitate of size r cannot be lower than that of a flat interface
+		xmax=atomic_volume*na/molar_volume*ceq_precipitate(1) ! the equilibrium concentration at the interface cannot be higher than the concentration in the precipitate
+
+		do while (abs(xmin-xmax)/xmax >0.0001.AND.xmax>1.0e-8)
+
+
+			ceq_matrix(1)=(xmin+xmax)/2.0
+
+			!  find the intersection between stoichiometric line and solubility line by dichotomy
+			! delta=0 ==> intersection between stoichiometry and solubility line
+			delta = ceq_matrix**stoechiometry(1)*&
+					((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
+					(ceq_matrix*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)&
+					-solubility_product
+
+			if (delta<0.0_pReal) then
+				xmin=ceq_matrix(1)
+			else
+				xmax=ceq_matrix(1)
+			endif
+
+		enddo
+
+		if (N_elements>1) then
+		ceq_matrix(2)=c_matrix(2)+stoechiometry(2)/stoechiometry(1)*(c_matrix(1)-c_eq_matrix(1))
+		endif
+
+return 
+end subroutine
+
 
 subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 								c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
-								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, misfit_energy)
+								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, misfit_energy, enthalpy, entropy)
 
 	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
 	implicit none
@@ -1089,7 +1166,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 	integer, intent(in) :: N_elements, N_steps
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
 	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient, ceq_matrix
-	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
+	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy, enthalpy, entropy
 	real(pReal), intent(inout), dimension(N_steps+1) :: x_eq_interface
     real(pReal), intent(in), dimension(N_steps+1) :: bins
 	real(pReal) :: xmin, xmax, solubility_product, delta
@@ -1104,7 +1181,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
    								if (stoechiometry(2)>0) then
 
 
-   									solubility_product=ceq_matrix(1)**stoechiometry(1)*ceq_matrix(2)**stoechiometry(2)
+   									solubility_product=exp(entropy/8.314_pReal-enthalpy/8.3148_pReal/T)
 
 
 									xmin=ceq_matrix(1)! the equilibrium concentration at the interface for a precipitate of size r cannot be lower than that of a flat interface
@@ -1200,6 +1277,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 
 						else
 							print*, '0 Growth bin:', bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1))*1.0e9, 'nm'
+						    radius_crit = bins(minloc(abs(growth_rate_array(1: N_Steps-1-2)),1)) ! test
 						endif
 
 

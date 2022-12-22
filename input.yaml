@@ -1,36 +1,37 @@
 
-#Deformation conditions
-T: 423 # temperature in K
-strain_rate: 1.0e-4  #/s - set to zero for static precipitation
+#Example for a binary alloy without any deformation
+# reproduces the results from Robson 2004, Materials Science and Technology DOI 10.1179/026708304225016725
+
+#Heat treatment conditions
+T: 873 # temperature in K
+strain_rate: 0.0  #/s - set to zero for static precipitation
 incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
-time: 10000 #total deformation time [s]
-output_time_step: 0.1 # the outputs will be generated for this time step
+time: 800 #total ageing time [s]
+output_time_step: 0.1 # the outputs will be generated for this time step  
 
 
 #Initial distribution
-initial_mean_radius: 0.9e-9  #[m]
-initial_volume_fraction: 0.007
+initial_mean_radius: 0.0 #[m] - no existing precipitates at the beginning of the heat treatment
+initial_volume_fraction: 0.0
 dispersion_parameter: 0.2 # s for a log normal distribution
 
 
 
 #Composition
-c0_matrix: [  0.02889, 0.02406]  #bulk composition in [Mg, Zn] in atomic fraction - here A7075
-stoichiometry: [5, 7, 6] #stoichiometry of the precipitate  Mg, Zn, Al (here it comes from Thermocalc for eta' phase )
-
-
+c0_matrix: [  0.0102, 0.0]  #bulk composition in solute in atomic fraction for a ternary alloy - here we consider a binary precipitate so the second value is 0 (binary Cu-Co)
+stoichiometry: [1, 0, 0] #stoichiometry of the precipitate in the ternary alloy, here it's only Co 
 
 #Kinetics model inputs
-lattice_parameter: 4.0695e-10 # lattice parameter of the product phase (m)-> this one needs to be changed
-atomic_volume: 1.66e-29 # atomic volume of matrix (m^3)
-molar_volume: 1.0e-5 # molar volume of precipitating phase (m^3/mol)
-misfit_energy: 0.0 # elastic misfit energy (J/m^3)  11.422e+6
-gamma_coherent: 0.265 # coherent surface energy (J/m^2)  - calibrated with Deschamps 2012 Acta Mat
-solute_diffusion0: [1.49e-5, 1.49e-5] # prefactor diffusion coefficient Mg, Zn [m^2/s]
-solute_migration_energy: [126.5e+3,126.5e+3] # activation energy for solute diffusion (here taken identical for Mg and Zn)
-c_eq: [1.22e-2,5.04e-4] # equilibrium concentration in Mg and Zn in the matrix
+lattice_parameter: 4.0695e-10 #  4.0695e-10 c parameter of HCP cobolt - (lattice parameter of copper3.597e-10) 
+atomic_volume: 1.1076e-29 # atomic volume of matrix (m^3) - here copper
+molar_volume: 6.67e-6 # molar volume of precipitating phase (m^3/mol), here cobalt
+misfit_energy: 0.0 # elastic misfit energy (J/m^3) cl
+gamma_coherent: 0.219 # coherent surface energy (J/m^2)  
+solute_diffusion0: [4.3e-5, 4.3e-5] # prefactor diffusion coefficient Co in Cu [m^2/s]
+solute_migration_energy: [214.0e+3,214.0e+3] # activation energy for solute diffusion [J/mol] - Co in Cu
+c_eq: [3.9e-3,0.0] # equilibrium concentration in Co in the matrix (here binary alloy, so the second value in the array is null)
 
-#Vacancy model inputs
+#Vacancy model inputs --> these parameters are not relevant when considering static precipitation, they must be there but can be ignored
 
 vacancy_sink_spacing:  50.0e-6 # sink spacing, here grain size [m]
 vacancy_diffusion0: 1.0e-5 # prefactor diffusion coefficient for vacancies - set to zero if there is no deformation
@@ -52,8 +53,11 @@ n: 6.68309
 
 
 
-## KWN discretisation
-kwn_step0: -9.30          # starting bin radius in logscale (m)
-kwn_stepsize: 0.01          # spacing between bins in logscale (m)
-kwn_nsteps: 100             # no. of radius bins
-dt_max: 0.01 #maximum time increment  [s]
+## KWN discretisation 
+kwn_step0: -9.5         # starting bin radius in logscale (m) --> smallest bin = 10^(kwn_step0) [m]
+kwn_stepsize: 0.006          # spacing between bins in logscale (m)
+kwn_nsteps: 300             # no. of radius bins
+dt_max: 1.0 #maximum time increment  [s]
+
+
+
