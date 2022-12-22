@@ -3,9 +3,10 @@
 @author Pratheek Shanthraj, University of Manchester  
 @author Samuel Engel, University of Manchester  
 
-KWN precipitation model including the effect of deformation via excess vacancy concentration  
-The code runs the model described in ref [3]
+KWN precipitation model including the effect of deformation via excess vacancy concentration calculation (phenomenological law for vacancy production)  
 
+The model is the one presented in the following reference: 
+ Bignon, M., Shanthraj, P., & Robson, J. D. (2022). Acta Materialia, 234, 118036. https://doi.org/10.1016/J.ACTAMAT.2022.118036 
 
 References:   
 
@@ -30,21 +31,18 @@ The code has been written in MacOS 11.6 and compiled with ifort.
 If used with Windows or Linux, the fortran file (KWN_with_deformation.f90) should be recompiled, preferentially with ifort (open the terminal in the folder containing the source files and enter "ifort *.f90")      
 If running on Ubuntu, the code can be compiled with gfortran (To compile: open the terminal in the folder containing the source files and enter "gfortran -ffree-line-length-0 *.f90". )   
 
-To force strict checks of the code recompile using `ifort -traceback -check all *.f90`.
-
+To force strict checks of the code recompile using `ifort -traceback -check all *.f90`, or, if using gfort: `gfortran -ffree-line-length-0 -fbounds-check  *.f90`
   
-To run the code :  
+To run the code :  $
 1. Fill or modify the "input.yaml" file with input corresponding to the model described in ref. [3].
-2. Run ./run_kwn.sh in a command line.  
-3. The outputs are written in textfiles and can be visualised using the attached Jupyter notebook.  
+2. Put the "input.yaml" file in a folder (e.g. "test_folder_name")
+2. Run `./run_kwn.sh test_folder_name` in a terminal.  
+3. The outputs are written in textfiles and can be visualised using the attached Jupyter notebooks.  
 
 
-Some examples of input files can be found in the "example" directory: 
-- with deformation  
-   - for two solute elements
-   - for binary alloys 
-- without deformation 
-   - for two solute elements (Al-Zn-Mg)
-   - for a binary alloy (fictive Al-Mg). 
+Some examples of input files and jupyer notebooks can be found in the "test_n" directories, with n the number of the test: 
+- with deformation  in a ternary alloy (Al-Zn-Mg) containing an initial distribution
+   - test_1
+- without deformation in a binary alloy with no initial distribution
    - for a Cu-Co binary alloy (reproduces result of ref [7]). 
    
