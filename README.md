@@ -33,7 +33,7 @@ If running on Ubuntu, the code can be compiled with gfortran (To compile: open t
 
 To force strict checks of the code recompile using `ifort -traceback -check all *.f90`, or, if using gfort: `gfortran -ffree-line-length-0 -fbounds-check  *.f90`
   
-To run the code :  $
+To run the code :
 1. Fill or modify the "input.yaml" file with input corresponding to the model described in ref. [3].
 2. Put the "input.yaml" file in a folder (e.g. "test_folder_name")
 2. Run `./run_kwn.sh test_folder_name` in a terminal.  
