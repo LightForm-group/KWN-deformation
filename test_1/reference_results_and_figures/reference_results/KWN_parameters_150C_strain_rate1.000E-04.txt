@@ -1,0 +1,31 @@
+  
+ KWN parameters
+  
+Interfacial energy:   0.265 J/m^2
+Migration energy:                   0.126500E+06 J/mol
+D0:                   0.149000E-04 m^2/s
+  
+ Initial distribution
+Initial mean radius:                   0.900000E-09 m
+Initial volume fraction:   0.007
+Standard deviation:                   0.000000E+00
+Shape parameter:   0.200
+  
+Starting bin :                  -0.930000E+01 m
+Bin width :                   0.100000E-01 m
+Number of steps :  100
+  
+ Vacancy model parameters 
+Vacancy formation energy:   0.520 [eV]
+Vacancy migration energy:   0.930 [eV]
+Pre-factor diffusion vacancy:                   0.100000E-04 [m^2/s]
+Mechanical vacancy production constant:   0.035 []
+Vacancy sink spacing (grain size):                   0.500000E-04 [m]
+Jog formation energy:   0.300 [eV]
+Dislocation arrangement parameter:  10.000 []
+Initial dislocation density:                   0.100000E+15 [/m^2]
+Saturation dislocation density:                   0.100000E+15 [/m^2]
+ 
+ Deformation conditions
+Strain rate:                   0.100000E-03 [/m^2]
+Temperature: 150.000 [°C]

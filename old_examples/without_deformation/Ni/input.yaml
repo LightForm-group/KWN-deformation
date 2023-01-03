@@ -1,0 +1,62 @@
+
+#Deformation conditions
+T: 1305 # temperature in K
+strain_rate: 0.0  #/s - set to zero for static precipitation
+incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
+time: 5.0 #total deformation time [s]
+output_time_step: 0.1 # the outputs will be generated for this time step
+
+
+#Initial distribution
+initial_mean_radius: [3.0e-6, 0.0]  #[m]
+initial_volume_fraction: [0.12, 0.0] #bimodal distribution
+dispersion_parameter: [0.2,0.15] # s for a log normal distribution
+
+
+
+#Composition
+c0_matrix: [  0.0903, 0]  #bulk composition in [Al+Ti, ] in atomic fraction - 
+stoichiometry: [1, 0, 3] #stoichiometry of the precipitate  [Al, Ti, Ni]
+
+
+
+#Kinetics model inputs
+lattice_parameter: 3.56e-10 # lattice parameter of the product phase (m)-> From Semiatin 2018 MMTA
+atomic_volume: 1.66e-29 # atomic volume of matrix (m^3)
+molar_volume: 1.0e-5 # molar volume of precipitating phase (m^3/mol)
+misfit_energy: 0.0 # elastic misfit energy (J/m^3)  11.422e+6
+gamma_coherent: 0.09 # coherent surface energy (J/m^2)  
+solute_diffusion0: [4.3e-6, 4.3e-6] # prefactor diffusion coefficient Ti in Ni [m^2/s] Javad Sohrabi 2019 4.3e-6 - test with twice this value
+solute_migration_energy: [256.0e+3,256.0e+3] # activation energy for solute diffusion (Ti in Ni) Javad Sohrabi 2019
+c_eq: [ 0.0801,0] # equilibrium concentration in Al and Ti in the matrix at 1090°C
+#to calculate the equilibrium - the calculation will replace the input value of c_eq. If the input of c_eq is to be used instead, set enthalpy and entropy to 0.0
+enthalpy: 62.259e+3 #J/mol
+entropy: 22.6107 #J/mol/K
+
+#Vacancy model inputs
+
+vacancy_sink_spacing:  50.0e-6 # sink spacing, here grain size [m]
+vacancy_diffusion0: 1.0e-5 # prefactor diffusion coefficient for vacancies - set to zero if there is no deformation
+jog_formation_energy: 0.3 # eV
+activation_energy_pipe_diffusion: 108.3e+3 # [J/mol] -ref Legros et al. 2008
+vacancy_formation_energy: 0.52 # eV
+vacancy_migration_energy: 0.93 # eV
+dislocation_arrangement: 10 # empirical factor from 1 to 10 in Militzer model
+vacancy_generation: 0.035 # mechanical vacancy production constant in Militzer model -  - set to zero if there is no deformation
+initial_dislocation_density: 1.0e+14 # /m^2
+saturation_dislocation_density: 1.0e+14 #  /m^2
+burgers_vector:  2.9e-10  #[m]
+#sinepower law for stress - needs to be changed to match 7075
+sigma_r: 100.0e+6 # [MPa]
+A: 5.214e-6 #[/s]
+Q_stress: 60.0e+3 # [J/mol]
+n: 6.68309
+
+
+
+
+## KWN discretisation
+kwn_step0: -9.5       # starting bin radius in linear scale (m)
+kwn_stepsize: 0.07    # spacing between bins in linear scale  (m)
+kwn_nsteps: 60     # no. of radius bins
+dt_max: 1.0 #maximum time increment  [s]

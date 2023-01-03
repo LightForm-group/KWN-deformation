@@ -1,12 +1,17 @@
 # Generates the input file in the right order for KWN model
+import sys
 import yaml
-a_yaml_file = open("input.yaml")
+
+
+test_name=sys.argv[1]
+a_yaml_file = open('{s}/input.yaml'.format(s=test_name))
 parsed_yaml_file = yaml.load(a_yaml_file, Loader=yaml.FullLoader)
 
 
 
 
 with open('input.dat', 'w') as f:
+		f.write( "%s \n" % test_name)
 		f.write( "%.3e \n" % parsed_yaml_file['kwn_step0'])
 		f.write( "%.3e \n" % parsed_yaml_file['kwn_stepsize'])
 		f.write( "%d \n" % parsed_yaml_file['kwn_nsteps'])

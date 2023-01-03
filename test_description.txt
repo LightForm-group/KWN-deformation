@@ -1,0 +1,17 @@
+---------------------------------------------------
+test 1
+---------------------------------------------------
+Precipitation kinetics in 
+- a ternary alloy (Al-Zn-Mg) 
+- with an existing initial distribution (no nucleation)
+- under deformation (phenomenological model for vacancy production)
+
+--------------------------------------------------
+test 2
+--------------------------------------------------
+This test reproduces the results in the article of Joe Robson : 2004, Materials Science and Technology - DOI 10.1179/026708304225016725
+
+Precipitation  kinetics in 
+- a binary alloy (Co-Cu)
+- no initial distribution (nucleation, growth and coarsening)
+- static heat treatment (no deformation)
