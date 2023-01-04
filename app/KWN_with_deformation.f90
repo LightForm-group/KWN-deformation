@@ -12,16 +12,10 @@
 ! [6] Nicolas, M., & Deschamps, A. (2003).  Acta Materialia, 51(20), 6077–6094. https://doi.org/10.1016/S1359-6454(03)00429-4
 program KWN
 
-    use KWN_precision
+    use KWN_parameters
     
 	implicit none
 
-	real(pReal), parameter :: &
-
-		kB = 1.38064852e-23_pReal, &
-		R  = 8.3145_pReal, &
-		PI = 3.14159265359_pReal, &
-		na = 6.02214076e23_pReal
 
 	type :: tParameters
 
