@@ -12,8 +12,9 @@
 ! [6] Nicolas, M., & Deschamps, A. (2003).  Acta Materialia, 51(20), 6077–6094. https://doi.org/10.1016/S1359-6454(03)00429-4
 program KWN
 
+    use KWN_precision
+    
 	implicit none
-	integer, parameter :: pReal = selected_real_kind(25)
 
 	real(pReal), parameter :: &
 
