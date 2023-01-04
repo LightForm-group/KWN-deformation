@@ -8,5 +8,3 @@ mkdir $1/results
 python generate_input_fortran.py $1
 # this is the main program
 ~/bin/KWNDeformation
-# move the results
-mv *.txt $1/results
