@@ -226,10 +226,10 @@ program KWN
 
 	!!! some conversions
 	prm%migration_energy=prm%migration_energy/na ! convert form J/mol to J/at
-	prm%jog_formation_energy = prm%jog_formation_energy*1.602176634e-19  ! convert from ev to  J/at
+	prm%jog_formation_energy = prm%jog_formation_energy*ev_to_Jat ! convert from ev to  J/at
 	prm%q_dislocation=prm%q_dislocation/na ! convert to J/at
-	prm%vacancy_energy=prm%vacancy_energy*1.602176634e-19  ! convert from ev to  J/at
-	prm%vacancy_migration_energy=prm%vacancy_migration_energy*1.602176634e-19  ! convert from ev to  J/at
+	prm%vacancy_energy=prm%vacancy_energy*ev_to_Jat  ! convert from ev to  J/at
+	prm%vacancy_migration_energy=prm%vacancy_migration_energy*ev_to_Jat  ! convert from ev to  J/at
 
 
 	prm%ceq_precipitate =real(stoechiometry(1:2))/real(sum(stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
