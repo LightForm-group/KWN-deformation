@@ -4,7 +4,7 @@ scenario="tests/test_1a"
 
 echo "checking output file checksums"
 
-cd ${scenario}/results && output=$(diff ../reference_result_checksums.txt <(md5 *)) || output="no result folder"
+cd ${scenario}/results || output="no result folder" && output=$(diff ../reference_result_checksums.txt <(md5 *))
 
 if [ -z "${output}" ];then
     echo "${scenario} outputs match reference outputs"
