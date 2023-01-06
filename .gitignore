@@ -1,0 +1,6 @@
+# ignore system information files
+**/.DS_Store
+**/.ipynb_checkpoints/
+
+# ignore the output directories created by tests
+**/results
