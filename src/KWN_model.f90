@@ -5,6 +5,7 @@ module KWN_model
     use KWN_model_routines, only: interface_composition, growth_precipitate
     use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density, &
                                    calculate_binary_alloy_critical_radius
+    use KWN_io, only: output_results
     
 contains
 
@@ -113,7 +114,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		temp_diffusion_coefficient, &
 		temp_dislocation_density, &
 		dt_temp, &
-		T_temp, &
+		Temperature_temp, &
 		h !used for Runge Kutta integration
 
 	character*100 :: filename !name of the gile where the outputs will be written
@@ -147,7 +148,7 @@ subroutine run_model(prm, dot, stt, dst, &
 	temp_x_eq_interface = x_eq_interface
 	temp_c_vacancy = stt%c_vacancy(en)
 	temp_dislocation_density = prm%rho_0
-	T_temp = Temperature
+	Temperature_temp = Temperature
 	stt%time(en) = 0.0_pReal
 	! time_record is used to record the results in textfiles
 	time_record = -dt
@@ -461,59 +462,65 @@ subroutine run_model(prm, dot, stt, dst, &
 		! then go back to the previous step and decrease the time step
 
 
-		if  ( ((stt%c_vacancy(en)) <0.0_pReal)  .OR.(minval(stt%precipitate_density(:,en)) <0.0_pReal).OR.(  minval(dst%c_matrix(:,en))<0.0_pReal).OR.any(isnan(stt%precipitate_density(:,en))))  then
+		if  (      (stt%c_vacancy(en) <0.0_pReal) &
+		      .OR. (minval(stt%precipitate_density(:,en)) < 0.0_pReal) &
+		      .OR. (minval(dst%c_matrix(:,en)) < 0.0_pReal) &
+		      .OR. any(isnan(stt%precipitate_density(:,en))) &
+		    )  then
 		! go back one step before
 
-			stt%time(en)=stt%time(en)-dt
-			dst%total_precipitate_density(en)= temp_total_precipitate_density
-			stt%precipitate_density(:,en)=temp_precipitate_density(:)
-			dot%precipitate_density(:,en)=temp_dot_precipitate_density(:)
+			stt%time(en) = stt%time(en) - dt
+			dst%total_precipitate_density(en) = temp_total_precipitate_density
+			stt%precipitate_density(:,en) = temp_precipitate_density(:)
+			dot%precipitate_density(:,en) = temp_dot_precipitate_density(:)
 			dst%avg_precipitate_radius(en) = temp_avg_precipitate_radius
 			dst%precipitate_volume_frac(en) = temp_precipitate_volume_frac
-			dst%c_matrix(:,en)  = temp_c_matrix
+			dst%c_matrix(:,en) = temp_c_matrix
 			stt%c_vacancy(en) = temp_c_vacancy
-			dislocation_density=temp_dislocation_density
-			Temperature=T_temp
-			radius_crit=temp_radius_crit
-			prm%ceq_matrix= temp_x_eq_matrix
+			dislocation_density = temp_dislocation_density
+			Temperature = Temperature_temp
+			radius_crit = temp_radius_crit
+			prm%ceq_matrix = temp_x_eq_matrix
 			x_eq_interface = temp_x_eq_interface
-			diffusion_coefficient(1)=temp_diffusion_coefficient
+			diffusion_coefficient(1) = temp_diffusion_coefficient
 
 			!decrease time step by a factor arbitrarily chose (2)
-			dt=0.5*dt
+			dt = 0.5 * dt
 
 
 		else
 		!set the time step so that a precipitate cannot grow from more than the space between two adjacent classes
 
 			!not necessary to adapt the time step to the growth rate if there is no precipitate
-			if (dst%total_precipitate_density(en)>1.0_pReal) then
+			if ( dst%total_precipitate_density(en) > 1.0_pReal ) then
 
-				dt=min(dt_max,(prm%bins(1)-prm%bins(0))/maxval(abs(growth_rate_array)))
-				print*,'dt growth rate', (prm%bins(1)-prm%bins(0))/maxval(abs(growth_rate_array))
+				dt = min( dt_max, &
+				          (prm%bins(1)-prm%bins(0)) / maxval(abs(growth_rate_array)) &
+				        )
+				print*,'dt growth rate', (prm%bins(1) - prm%bins(0)) / maxval(abs(growth_rate_array))
 
 			else
-				dt=min(dt_max,dt*1.2) !increase slightly the time step by an arbitrary factor as long as there are no precipitates
+				dt = min(dt_max, dt*1.2) !increase slightly the time step by an arbitrary factor as long as there are no precipitates
 			endif
 
 
 			! store the new values of the outputs in the temporary variables
-			temp_dot_precipitate_density=dot%precipitate_density(:,en)
-			temp_total_precipitate_density =dst%total_precipitate_density(en)
+			temp_dot_precipitate_density = dot%precipitate_density(:,en)
+			temp_total_precipitate_density = dst%total_precipitate_density(en)
 			temp_precipitate_density = stt%precipitate_density(:,en)
 			temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
 			temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)
 			temp_c_matrix = dst%c_matrix(:,en)
-			temp_radius_crit=radius_crit
-			temp_x_eq_matrix=prm%ceq_matrix
-			temp_x_eq_interface=x_eq_interface
-			temp_c_vacancy=stt%c_vacancy(en)
-			temp_dislocation_density= dislocation_density
-			T_temp=Temperature
-			temp_diffusion_coefficient=diffusion_coefficient(1)
+			temp_radius_crit = radius_crit
+			temp_x_eq_matrix = prm%ceq_matrix
+			temp_x_eq_interface = x_eq_interface
+			temp_c_vacancy = stt%c_vacancy(en)
+			temp_dislocation_density = dislocation_density
+			Temperature_temp = Temperature
+			temp_diffusion_coefficient = diffusion_coefficient(1)
 
 
-			if (time_record<stt%time(en)) then !record the outputs every 'time_record' seconds
+			if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 
 
 				! write outputs in textfiles
@@ -552,27 +559,8 @@ subroutine run_model(prm, dot, stt, dst, &
 					WRITE(2,'(E40.15)') stt%time(en), stt%precipitate_density(:,en)
 				close(2)
 
-
-				filename='results/diffusion_coefficient_'
-				filename=trim(testfolder)//trim(filename)//trim(filesuffix)
-				open(1, file = filename,  ACTION="write", position="append")
-					write(1, 601) stt%time(en), diffusion_coefficient(1)
-					601 FORMAT(2E40.6)
-				close(1)
-
-				filename='results/vacancies_'
-				filename=trim(testfolder)//trim(filename)//trim(filesuffix)
-				open(1, file = filename,  ACTION="write", position="append")
-					write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
-					1001 FORMAT(4E40.6)
-				close(1)
-
-				filename='results/dislocation_density_'
-				filename=trim(testfolder)//trim(filename)//trim(filesuffix)
-				open(1, file = filename,  ACTION="write", position="append")
-					write(1, 901) stt%time(en), dislocation_density
-					901 FORMAT(3E40.6)
-				close(1)
+                call output_results(testfolder, filesuffix, stt, diffusion_coefficient, c_thermal_vacancy, &
+                                    production_rate, annihilation_rate, dislocation_density, en)
 
 
 				! next time for which the outputs should be written

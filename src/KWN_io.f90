@@ -1,7 +1,7 @@
 module KWN_io
 
     use KWN_precision
-    use KWN_data_types, only: tParameters
+    use KWN_data_types, only: tParameters, tKwnpowerlawState
     
 contains
     
@@ -94,5 +94,53 @@ subroutine read_configuration( &
 
 end subroutine read_configuration
 
+
+subroutine output_results(testfolder, filesuffix, stt, diffusion_coefficient, c_thermal_vacancy, &
+                        production_rate, annihilation_rate, dislocation_density, en)
+
+	type(tKwnpowerlawState), intent(in) :: stt
+
+	real(pReal), dimension(:), allocatable, intent(in) ::   &
+		diffusion_coefficient  ! diffusion coefficient for Mg and Zn
+
+    real(pReal), intent(in) :: &
+		c_thermal_vacancy, & ! concentration in thermal vacancies
+		production_rate, & ! production rate for excess vacancies
+		annihilation_rate, & !annihilation rate for excess vacancies
+		dislocation_density ![/m^2]
+    
+    integer, intent(in) :: en
+    
+	character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
+	character*100, intent(in) :: testfolder !folder where the input file is
+
+    ! local variables
+	character*100 :: filename !name of the gile where the outputs will be written
+
+	filename = 'results/diffusion_coefficient_'
+	filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+
+	open(1, file = filename,  ACTION="write", position="append")
+		write(1, 601) stt%time(en), diffusion_coefficient(1)
+	close(1)
+
+	filename = 'results/vacancies_'
+	filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+	open(1, file = filename,  ACTION="write", position="append")
+		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, &
+		               production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
+	close(1)
+
+	filename = 'results/dislocation_density_'
+	filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+	open(1, file = filename,  ACTION="write", position="append")
+		write(1, 901) stt%time(en), dislocation_density
+	close(1)
+
+601 FORMAT(2E40.6)
+901 FORMAT(3E40.6)
+1001 FORMAT(4E40.6)
+
+end subroutine output_results
 
 end module KWN_io
