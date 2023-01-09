@@ -523,44 +523,9 @@ subroutine run_model(prm, dot, stt, dst, &
 			if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 
 
-				! write outputs in textfiles
-				results(1,1)=stt%time(en)
-				results(1,2)=dst%avg_precipitate_radius(en)*1.0e9
-				results(1,3)=dst%total_precipitate_density(en)*1.0e-18
-
-				if (results(1,3)<1.0e-30_pReal) then
-					results(1,3)=0.0
-				endif
-
-				results(1,4)=dst%precipitate_volume_frac(en)
-				if (results(1,4)<1.0e-30_pReal) then
-					results(1,4)=0.0
-				endif
-				results(1,7:8)=dst%c_matrix(:,en)
-				results(1,6)=nucleation_rate*1.0e-18
-				if (results(1,6)<1.0e-30_pReal) then
-					results(1,6)=0.0
-				endif
-				results(1,5)=radius_crit*1.0e9
-
-				filename='results/kinetics_data_'
-				filename=trim(testfolder)//trim(filename)//trim(filesuffix)
-
-				open(1, file = filename,  ACTION="write", position="append")
-					WRITE(1,13) (results(1,i), i=1,8)
-					13 FORMAT(F40.6,F40.6,E40.6,E40.6,E40.6, E40.6, 2E40.6 )
-				close(1)
-
-				! writes the current distribution
-				filename='results/precipitation_distribution_'
-				filename=trim(testfolder)//trim(filename)//trim(filesuffix)
-
-				open(2, file = filename,  ACTION="write", STATUS="replace")
-					WRITE(2,'(E40.15)') stt%time(en), stt%precipitate_density(:,en)
-				close(2)
-
-                call output_results(testfolder, filesuffix, stt, diffusion_coefficient, c_thermal_vacancy, &
-                                    production_rate, annihilation_rate, dislocation_density, en)
+                call output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
+                                    nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
+                                    radius_crit, en)
 
 
 				! next time for which the outputs should be written

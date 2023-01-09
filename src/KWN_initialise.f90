@@ -333,8 +333,9 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                mean_particle_strength, Q_stress, &
                                time_record_step, total_time, x_eq_interface, en)
 
-    call output_results(testfolder, filesuffix, stt, diffusion_coefficient, c_thermal_vacancy, &
-                        production_rate, annihilation_rate, dislocation_density, en)
+    call output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
+                        nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
+                        radius_crit, en)
 
 
 end subroutine initialise_model_state
@@ -371,12 +372,9 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
     integer, intent(in) :: en
 
     ! local variables
-	real(pReal), dimension(:,:), allocatable :: &
-		results !variable to store the results
 	character*100 :: filename !name of the gile where the outputs will be written
     integer :: bin, i
 
-	allocate(results(1,8)) ! the results are stored in this array
 
 
 	!Write the initial precipitate distribution in a textfile
@@ -489,26 +487,6 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 	open(1, file = filename,  ACTION="write", STATUS="replace")
 
 		write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
-		!record initial state
-		results(1,1) = stt%time(en)
-		results(1,2) = dst%avg_precipitate_radius(en)*1.0e9 !in nm
-		results(1,3) = dst%total_precipitate_density(en)*1.0e-18 !in microns/m3
-		if (results(1,3) < 1.0e-30_pReal) then
-			results(1,3) = 0.0
-		endif
-		results(1,4) = dst%precipitate_volume_frac(en)
-		if (results(1,4) < 1.0e-30_pReal) then
-			results(1,4) = 0.0
-		endif
-		results(1,7:8) = dst%c_matrix(:,en)
-		results(1,6) = nucleation_rate*1.0e-18
-		if (results(1,6) < 1.0e-30_pReal) then
-			results(1,6) = 0.0
-		endif
-		results(1,5) = radius_crit * 1.0e9
-
-		WRITE(1,14) (results(1,i), i=1,8)
-		14 FORMAT(F40.6,F40.6, 6E40.6)
 
 	close(1)
 
