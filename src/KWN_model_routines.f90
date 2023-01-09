@@ -4,7 +4,7 @@ use KWN_precision
 
 contains
 
-subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
+subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometry, &
 								c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
 								bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, misfit_energy)
     
@@ -14,7 +14,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 	integer, intent(in) :: N_elements, N_steps
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
 	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient, ceq_matrix
-	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
+	real(pReal), intent(in) :: Temperature,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
 	real(pReal), intent(inout), dimension(0:N_steps) :: x_eq_interface
     real(pReal), intent(in), dimension(0:N_steps) :: bins
 	real(pReal) :: xmin, xmax, solubility_product, delta
@@ -45,7 +45,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 										delta = x_eq_interface(i)**stoechiometry(1)*&
 												((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
 												(x_eq_interface(i)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)&
-												-solubility_product*exp(2.0*molar_volume*gamma_coherent/R/T/bins(i)*real(sum(stoechiometry)) )
+												-solubility_product*exp(2.0*molar_volume*gamma_coherent/R/Temperature/bins(i)*real(sum(stoechiometry)) )
 
 										if (delta<0.0_pReal) then
 											xmin=x_eq_interface(i)
@@ -56,7 +56,7 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 									enddo
 
 								else
-									x_eq_interface(i) =ceq_matrix(1)*exp((2.0*molar_volume*gamma_coherent/(R*T*bins(i)*ceq_precipitate(1)))+molar_volume*misfit_energy/(R*T)) ! Gibbs Thomson effect for a precipitate with a single alloying element
+									x_eq_interface(i) =ceq_matrix(1)*exp((2.0*molar_volume*gamma_coherent/(R*Temperature*bins(i)*ceq_precipitate(1)))+molar_volume*misfit_energy/(R*Temperature)) ! Gibbs Thomson effect for a precipitate with a single alloying element
 
 								endif
 

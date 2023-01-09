@@ -10,7 +10,7 @@ contains
 subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, N_elements, en, &
                                 stoechiometry, normalized_distribution_function, &
-                                T, radius_crit, interface_c, time_record_step, &
+                                Temperature, radius_crit, interface_c, time_record_step, &
                                 c_thermal_vacancy, shape_parameter, sigma_r, A, &
                                 incubation, Q_stress, n, diffusion_coefficient, &
                                 dt, dt_max, total_time, growth_rate_array, &
@@ -38,7 +38,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 		x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
 	real(pReal), intent(out) :: &
-		T, & !temperature in K
+		Temperature, & !temperature in K
 		radius_crit, & !critical radius, [m]
 		interface_c, & !interface composition between matrix and a precipitate
 		time_record_step, & ! time step for the output [s]
@@ -96,7 +96,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     call read_configuration( &
 							testfolder, &
 							prm, &
-							T, &
+							Temperature, &
 							shape_parameter, &  ! the initial distribution is defined by mean radius, volume fraction and shape parameter of a log normal distribution - see e.g. ref [4]
 							total_time, &  ![s]
 							dt_max, &  ![s]
@@ -150,8 +150,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 	! if the initial value for the time step is higher than dt max replace by dt max
 	dt = min(dt_max, dt)
 
-	! define the output file suffix (contains T in °C and strain rate in /s)
-	write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(T)-273, prm%strain_rate
+	! define the output file suffix (contains Temperature in °C and strain rate in /s)
+	write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(Temperature)-273, prm%strain_rate
 
 	!! initialise the bins for the size distribution
 	! SAM: Adjusted binning
@@ -286,15 +286,15 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 							/ ( 1.0 - dst%precipitate_volume_frac(en) )
 
 	!calculate initial diffusion coefficient
-	diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / T / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-							!	*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)  ! include pipe diffusion
+	diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+							!	*prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)  ! include pipe diffusion
 
 
 
 
 
 	!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
-	call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
+	call interface_composition( Temperature,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
 								prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
 								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
@@ -322,7 +322,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 	print*, 'Equilibrium composition matrix :', prm%ceq_matrix
 
     call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
-                               shape_parameter, T, dt, dt_max, growth_rate_array, &
+                               shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
                                mean_particle_strength, Q_stress, &
                                time_record_step, total_time, x_eq_interface, en)
 
@@ -334,7 +334,7 @@ end subroutine initialise_model_state
 
 
 subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
-                               shape_parameter, T, dt, dt_max, growth_rate_array, &
+                               shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
                                mean_particle_strength, Q_stress, &
                                time_record_step, total_time, x_eq_interface, en)
 
@@ -352,7 +352,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 		dt_max, & ! max time step for integration [s]
 		time_record_step, & ! time step for the output [s]
 		total_time, & ![s]
-		T, & !temperature in K
+		Temperature, & !temperature in K
 		mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
         shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
 		nucleation_rate, & ! part/m^3/s
@@ -470,7 +470,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 			WRITE (201,*) 'Deformation conditions'
 			WRITE (201,313) prm%strain_rate
 			313 FORMAT ('Strain rate: ', E30.6, ' [/m^2]')
-			WRITE (201,314) T-273
+			WRITE (201,314) Temperature-273
 			314 FORMAT ('Temperature: ', F7.3, ' [°C]')
 		close(201)
 

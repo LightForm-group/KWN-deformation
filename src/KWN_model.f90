@@ -3,14 +3,14 @@ module KWN_model
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate
-    use KWN_model_functions, only: calculate_shear_modulus
+    use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density
     
 contains
 
 subroutine run_model(prm, dot, stt, dst, &
 					Nmembers, N_elements, en, &
 					stoechiometry, normalized_distribution_function, &
-					T, radius_crit, interface_c, time_record_step, &
+					Temperature, radius_crit, interface_c, time_record_step, &
 					c_thermal_vacancy, shape_parameter, sigma_r, A, &
 					incubation, Q_stress, n, diffusion_coefficient, &
 					dt, dt_max, total_time, growth_rate_array, &
@@ -48,7 +48,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		n ! stress exponent in the sinepower law for flow stress
 
     real(pReal), intent(inout) :: &
-		T, & !temperature in K
+		Temperature, & !temperature in K
 		c_thermal_vacancy, & ! concentration in thermal vacancies
 		radius_crit !critical radius, [m]
 
@@ -146,7 +146,7 @@ subroutine run_model(prm, dot, stt, dst, &
 	temp_x_eq_interface = x_eq_interface
 	temp_c_vacancy = stt%c_vacancy(en)
 	temp_dislocation_density = prm%rho_0
-	T_temp = T
+	T_temp = Temperature
 	stt%time(en) = 0.0_pReal
 	! time_record is used to record the results in textfiles
 	time_record = -dt
@@ -157,58 +157,56 @@ subroutine run_model(prm, dot, stt, dst, &
 
     k = 0
 	loop_time : do while  (stt%time(en).LE. total_time)
-
-
 		k=k+1
+		
 		print*, "dt:", dt
 		print*, 'Time:', stt%time(en)
-		print*, 'Temperature', T
+		print*, 'Temperature', Temperature
 		print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
-		diffusion_coefficient = prm%diffusion0*exp(-(prm%migration_energy )/T/kb)
-		mu = calculate_shear_modulus(T)
+		
+		diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb)
+		mu = calculate_shear_modulus(Temperature)
 
 
 		! if there is deformation, calculate the vacancy related parameters
 
 
-		flow_stress=sigma_r*asinh(((prm%strain_rate/(A))*exp(Q_stress/8.314/T))**(1/n))
-		c_thermal_vacancy=23.0*exp(-prm%vacancy_energy/kB/T)
-		c_j=exp(-prm%jog_formation_energy/kB/T)
-		strain=prm%strain_rate*stt%time(en)
-		!from Detemple 1995 Physical Review B - Condensed Matter and Materials Physics, 52(1), 125–133.
-		dislocation_density=prm%rho_s*(1- (sqrt(prm%rho_s)-sqrt(prm%rho_0))/sqrt(prm%rho_s)*exp(-1.0/2.0*86*(strain))  )**2
-
+		flow_stress = sigma_r * asinh(((prm%strain_rate / (A)) * exp(Q_stress / 8.314 / Temperature)) ** (1/n))
+		c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / kB / Temperature)
+		c_j = exp(-prm%jog_formation_energy / kB / Temperature)
+		strain = prm%strain_rate * stt%time(en)
+        dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
 
 		! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]
 		production_rate = 	prm%vacancy_generation*flow_stress*prm%atomic_volume/prm%vacancy_energy*prm%strain_rate &
 							+ 0.5*c_j*prm%atomic_volume/4.0/prm%burgers**3*prm%strain_rate
 
-		annihilation_rate =	prm%vacancy_diffusion0*exp(-prm%vacancy_migration_energy/kB/T) &
+		annihilation_rate =	prm%vacancy_diffusion0*exp(-prm%vacancy_migration_energy/kB/Temperature) &
 							*(dislocation_density/prm%dislocation_arrangement**2+1.0/prm%vacancy_sink_spacing**2)*stt%c_vacancy(en)
 		
 
 
 		! variation in vacancy concentration
-		dot%c_vacancy(en) = production_rate-annihilation_rate
+		dot%c_vacancy(en) = production_rate - annihilation_rate
 
 		! total number of vacancies
-		stt%c_vacancy(en) = stt%c_vacancy(en)+dot%c_vacancy(en)*dt
+		stt%c_vacancy(en) = stt%c_vacancy(en) + dot%c_vacancy(en) * dt
 
 		!update the diffusion coefficient as a function of the vacancy concentration
 		! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
-		diffusion_coefficient = prm%diffusion0*exp(-(prm%migration_energy )/T/kb)&
-								*(1.0+stt%c_vacancy(en)/c_thermal_vacancy  )! &
+		diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb) &
+								* (1.0 + stt%c_vacancy(en) / c_thermal_vacancy )! &
 							!	+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-							!	*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)
+							!	*prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
 
 
 	
 
 		! calculate nucleation rate
-		nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
+		nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
 
-		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
-		 / 2.0_pReal/PI/radius_crit/radius_crit
+		zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / kB / Temperature) &
+		                                           / 2.0_pReal / PI / radius_crit / radius_crit
 
 
 		! expression of beta star for ternary alloys
@@ -223,7 +221,7 @@ subroutine run_model(prm, dot, stt, dst, &
 						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
 !-----------------------------------------------------------------------------------------------------------------------------------
 							! SAM: Added method to calculate the  explicitly
-							deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
+							deltaGv = -R*Temperature/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
 
 							radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
 						
@@ -238,7 +236,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		if (stt%time(en) > 0.0_pReal) then
 			nucleation_rate =   nucleation_site_density*zeldovich_factor*beta_star &
 								* exp( &
-								- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
+								- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/Temperature &
 								- incubation_time/stt%time(en) )
 			print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
 			
@@ -284,7 +282,7 @@ subroutine run_model(prm, dot, stt, dst, &
 								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
 		nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
-		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
+		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/Temperature) &
 							/ 2.0_pReal/PI/radius_crit/radius_crit
 
 		! expression of beta star for ternary alloys
@@ -304,7 +302,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		if (stt%time(en) > 0.0_pReal) then
 			nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
 			* exp( &
-			- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
+			- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/Temperature &
 			- incubation_time/stt%time(en) )
 
 
@@ -350,7 +348,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		stt%time(en)= stt%time(en) +h/2.0
 
 		nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
-		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
+		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/Temperature) &
 						/ 2.0_pReal/PI/radius_crit/radius_crit
 		! expression of beta star for ternary alloys
 		if (dst%c_matrix(2,en)>0) then
@@ -372,7 +370,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		if (stt%time(en) > 0.0_pReal) then
 				nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
 				* exp( &
-				 - 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
+				 - 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/Temperature &
 				 - incubation_time/stt%time(en) &
 				)
 		else
@@ -471,7 +469,7 @@ subroutine run_model(prm, dot, stt, dst, &
 			dst%c_matrix(:,en)  = temp_c_matrix
 			stt%c_vacancy(en) = temp_c_vacancy
 			dislocation_density=temp_dislocation_density
-			T=T_temp
+			Temperature=T_temp
 			radius_crit=temp_radius_crit
 			prm%ceq_matrix= temp_x_eq_matrix
 			x_eq_interface = temp_x_eq_interface
@@ -507,7 +505,7 @@ subroutine run_model(prm, dot, stt, dst, &
 			temp_x_eq_interface=x_eq_interface
 			temp_c_vacancy=stt%c_vacancy(en)
 			temp_dislocation_density= dislocation_density
-			T_temp=T
+			T_temp=Temperature
 			temp_diffusion_coefficient=diffusion_coefficient(1)
 
 
