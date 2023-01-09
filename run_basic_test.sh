@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 run_analysis ()
 {
 ./run_kwn.sh ${scenario} 2>&1 > ${scenario}_log.txt 
@@ -11,14 +10,14 @@ if [ -z "${output}" ];then
 else
     echo ${output}
 fi
+cd -
 }
 
 scenario="tests/test_1a"
-run_analysis()
+run_analysis
 
 scenario="tests/test_2a"
-run_analysis()
-
+run_analysis
 
 echo "tests finished"
 
