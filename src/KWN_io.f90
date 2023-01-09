@@ -2,7 +2,6 @@ module KWN_io
 
     use KWN_precision
     use KWN_data_types, only: tParameters
-    implicit none
     
 contains
     
@@ -22,6 +21,9 @@ subroutine read_configuration( &
 							stoechiometry &
 							)
     
+
+    implicit none
+
     character*100, intent(out) :: testfolder
     type(tParameters), intent(inout) :: prm
 	integer, dimension(:), allocatable, intent(inout) :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al

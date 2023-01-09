@@ -50,7 +50,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 		Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
 		n ! stress exponent in the sinepower law for flow stress
 
-	! the 'temp' variables are to store the previous step and adapt the time step at each iteration
 	real(pReal), dimension(:), allocatable, intent(out) ::   &
 		diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
