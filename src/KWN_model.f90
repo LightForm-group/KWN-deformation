@@ -166,16 +166,16 @@ subroutine run_model(prm, dot, stt, dst, &
 		print*, 'Temperature', Temperature
 		print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
 		
-		diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb)
+		diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / (Temperature * kb) )
 		mu = calculate_shear_modulus(Temperature)
 
 
 		! if there is deformation, calculate the vacancy related parameters
 
 
-		flow_stress = sigma_r * asinh(((prm%strain_rate / (A)) * exp(Q_stress / 8.314 / Temperature)) ** (1/n))
-		c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / kB / Temperature)
-		c_j = exp(-prm%jog_formation_energy / kB / Temperature)
+		flow_stress = sigma_r * asinh(((prm%strain_rate / (A)) * exp(Q_stress / ( 8.314 * Temperature) )) ** (1/n))
+		c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
+		c_j = exp(-prm%jog_formation_energy / (kB * Temperature) )
 		strain = prm%strain_rate * stt%time(en)
         dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
 
@@ -184,7 +184,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		                         / prm%vacancy_energy &
 							+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
-		annihilation_rate =	prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / kB / Temperature ) &
+		annihilation_rate =	prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * Temperature) ) &
 							* ( dislocation_density / prm%dislocation_arrangement**2 &
 							    + 1.0 / prm%vacancy_sink_spacing**2 ) &
 							* stt%c_vacancy(en)
@@ -199,7 +199,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 		!update the diffusion coefficient as a function of the vacancy concentration
 		! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
-		diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / Temperature / kb) &
+		diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / (Temperature * kb) ) &
 								* (1.0 + stt%c_vacancy(en) / c_thermal_vacancy )! &
 							!	+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
 							!	*prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
@@ -210,8 +210,8 @@ subroutine run_model(prm, dot, stt, dst, &
 		! calculate nucleation rate
 		nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
 
-		zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / kB / Temperature) &
-		                                           / 2.0_pReal / PI / radius_crit / radius_crit
+		zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * Temperature ) ) &
+		                                           / ( 2.0_pReal * PI * radius_crit**2.0 )
 
 
 		!TODO: Have users set N_elements, and test for N_elements==2 here to define ternary alloy
@@ -250,7 +250,7 @@ subroutine run_model(prm, dot, stt, dst, &
 			nucleation_rate = 0.0_pReal
 		endif
 
-		dot%precipitate_density=0.0*dot%precipitate_density
+		dot%precipitate_density= 0.0 * dot%precipitate_density
 
 		!calculate the precipitate growth in all bins dot%precipitate_density
 		call 	growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
@@ -260,10 +260,10 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
 		! empty the first bin to avoid precipitate accumulation
-		!dot%precipitate_density(0,en)=0.0_pReal
-		dot%precipitate_density(1,en)=0.0_pReal
-		!stt%precipitate_density(0,en)=0.0_pReal
-		stt%precipitate_density(1,en)=0.0_pReal
+		!dot%precipitate_density(0,en) = 0.0_pReal
+		dot%precipitate_density(1,en) = 0.0_pReal
+		!stt%precipitate_density(0,en) = 0.0_pReal
+		stt%precipitate_density(1,en) = 0.0_pReal
 
 
 		! Runge Kutta 4th order to calculate the derivatives
@@ -274,11 +274,11 @@ subroutine run_model(prm, dot, stt, dst, &
 		! Runge Kutta k2 calculation
 		! repeat the calculations above for t = t+dt/2
 
-		h=dt
-		k1=dot%precipitate_density(:,en)
+		h = dt
+		k1 = dot%precipitate_density(:,en)
 
-		stt%time(en)=stt%time(en)+h/2.0
-		stt%precipitate_density(:,en)=temp_precipitate_density+h/2.0*k1
+		stt%time(en) = stt%time(en) + h / 2.0
+		stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k1
 
 
 		call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
@@ -286,29 +286,31 @@ subroutine run_model(prm, dot, stt, dst, &
 								stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,&
 								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
-		nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
-		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/Temperature) &
-							/ 2.0_pReal/PI/radius_crit/radius_crit
+		nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
+		zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * Temperature) ) &
+							/ (2.0_pReal * PI * radius_crit**2.0)
 
 		! expression of beta star for ternary alloys
 		if (dst%c_matrix(2,en)>0) then
-			beta_star = 4.0_pReal*PI&
-						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+			beta_star = 4.0_pReal * PI &
+						* radius_crit ** 2.0 / prm%lattice_param**4.0 &
+						* 1 / sum( 1 / (diffusion_coefficient(:) * dst%c_matrix(:,en)) )
 		! expression of beta star for binary alloys
 		else
-			beta_star = 4.0_pReal*PI&
-						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+			beta_star = 4.0_pReal * PI &
+						* radius_crit ** 2.0 / prm%lattice_param**4.0 &
+						* 1 / ( 1 / (diffusion_coefficient(1) * dst%c_matrix(1,en)) )
 		endif
 
-		incubation_time = incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+		incubation_time = incubation * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
 
 		if (stt%time(en) > 0.0_pReal) then
-			nucleation_rate = nucleation_site_density*zeldovich_factor*beta_star &
-			* exp( &
-			- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/Temperature &
-			- incubation_time/stt%time(en) )
+			nucleation_rate = nucleation_site_density * zeldovich_factor * beta_star &
+			                  * exp( &
+			                        - 4.0_pReal * PI * prm%gamma_coherent &
+			                          * radius_crit * radius_crit &
+			                          / (3.0_pReal * kB * Temperature) &
+			                        - incubation_time / stt%time(en) )
 
 
 		else
@@ -316,7 +318,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		endif
 
 
-		dot%precipitate_density=0.0*dot%precipitate_density
+		dot%precipitate_density = 0.0 * dot%precipitate_density
 
 		call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
@@ -325,15 +327,15 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
 
-		!dot%precipitate_density(0,en)=0.0_pReal
-		dot%precipitate_density(1,en)=0.0_pReal
-		!stt%precipitate_density(0,en)=0.0_pReal
-		stt%precipitate_density(1,en)=0.0_pReal
-		k2=dot%precipitate_density(:,en)
+		!dot%precipitate_density(0,en) = 0.0_pReal
+		dot%precipitate_density(1,en) = 0.0_pReal
+		!stt%precipitate_density(0,en) = 0.0_pReal
+		stt%precipitate_density(1,en) = 0.0_pReal
+		k2 = dot%precipitate_density(:,en)
 
 		! Runge Kutta k3 calculation
-		stt%precipitate_density(:,en)=temp_precipitate_density+h/2.0*k2
-		dot%precipitate_density=0.0*dot%precipitate_density
+		stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k2
+		dot%precipitate_density = 0.0 * dot%precipitate_density
 
 		call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
 								x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
@@ -341,20 +343,21 @@ subroutine run_model(prm, dot, stt, dst, &
 								diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
 		! empty the first bin to avoid precipitate accumulation
-		!dot%precipitate_density(0,en)=0.0_pReal
-		dot%precipitate_density(1,en)=0.0_pReal
-		!stt%precipitate_density(0,en)=0.0_pReal
-		stt%precipitate_density(1,en)=0.0_pReal
+		!dot%precipitate_density(0,en) = 0.0_pReal
+		dot%precipitate_density(1,en) = 0.0_pReal
+		!stt%precipitate_density(0,en) = 0.0_pReal
+		stt%precipitate_density(1,en) = 0.0_pReal
 
-		k3=dot%precipitate_density(:,en)
+		k3 = dot%precipitate_density(:,en)
 
 		! Runge Kutta k4 calculation
-		stt%precipitate_density(:,en)=temp_precipitate_density+h*k3
-		stt%time(en)= stt%time(en) +h/2.0
+		stt%precipitate_density(:,en) = temp_precipitate_density + h * k3
+		stt%time(en)= stt%time(en) + h / 2.0
 
-		nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
-		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/Temperature) &
-						/ 2.0_pReal/PI/radius_crit/radius_crit
+		nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
+		zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent / (kB * Temperature)) &
+						/ ( 2.0_pReal * PI * radius_crit**2.0 )
+		
 		! expression of beta star for ternary alloys
 		if (dst%c_matrix(2,en)>0) then
 			beta_star = 4.0_pReal*PI&
