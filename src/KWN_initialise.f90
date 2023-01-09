@@ -3,6 +3,7 @@ module KWN_initialise
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate
+    use KWN_model_functions, only: calculate_binary_alloy_critical_radius
     use KWN_io, only: read_configuration
 
 contains
@@ -72,6 +73,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 		integral_dist_function, & ! used to calculate the initial distribution
 		mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
 		nucleation_rate, & ! part/m^3/s
+		deltaGv, & ! chemical driving force [J/mol]
 		vol_int
 
 
@@ -297,6 +299,11 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 	call interface_composition( Temperature,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
 								prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
 								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+
+	!TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
+	if (dst%c_matrix(2,en)==0) then
+	    radius_crit = calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
+    end if
 
 	!calculate the initial growth rate of precipitates of all sizes
 	call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, &

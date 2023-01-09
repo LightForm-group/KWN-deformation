@@ -1,6 +1,8 @@
 module KWN_model_functions
 
-use KWN_precision
+    use KWN_parameters
+    use KWN_data_types, only: tParameters, tKwnpowerlawMicrostructure
+
 
 contains
 
@@ -37,7 +39,25 @@ function calculate_dislocation_density(rho_0, rho_s, strain)
 end function calculate_dislocation_density
 
 
+function calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
+    implicit none
+    ! calculate the critical radius for binary alloys
+    real(pReal), intent(in) :: Temperature !temperature in K
+	type(tParameters), intent(in) :: prm
+	type(tKwnpowerlawMicrostructure), intent(in) :: dst
+	integer, intent(in) :: en
+	real(pReal) :: deltaGv
+	real(pReal) :: calculate_binary_alloy_critical_radius
+    
+	! SAM: Added method to calculate the  explicitly
+	deltaGv = -R * Temperature &
+				 * log( dst%c_matrix(1,en) / prm%ceq_matrix(1) ) &
+				 / prm%molar_volume & 
+			  + prm%misfit_energy
 
+	calculate_binary_alloy_critical_radius = -2.0_pReal * prm%gamma_coherent / deltaGv
+
+end function calculate_binary_alloy_critical_radius
 
 
 

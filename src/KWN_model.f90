@@ -3,7 +3,8 @@ module KWN_model
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate
-    use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density
+    use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density, &
+                                   calculate_binary_alloy_critical_radius
     
 contains
 
@@ -212,30 +213,21 @@ subroutine run_model(prm, dot, stt, dst, &
 		                                           / 2.0_pReal / PI / radius_crit / radius_crit
 
 
+		!TODO: Have users set N_elements, and test for N_elements==2 here to define ternary alloy
 		! expression of beta star for ternary alloys
 		if (dst%c_matrix(2,en)>0) then
 			beta_star = 4.0_pReal * PI &
 						* radius_crit ** 2.0 / (prm%lattice_param ** 4.0) &
 						* 1 / ( sum( 1 / (diffusion_coefficient(:) * dst%c_matrix(:,en)) ) )
-		    print*, 'ternary alloys!', diffusion_coefficient(:)
 		! expression of beta star for binary alloys
 		else
 			beta_star = 4.0_pReal * PI &
 						* radius_crit ** 2.0 / (prm%lattice_param ** 4.0) &
 						* 1 / ( ( 1 / (diffusion_coefficient(1)*dst%c_matrix(1,en)) ) )
 						
-		    print*, 'binary alloys!'
-!-----------------------------------------------------------------------------------------------------------------------------------
-			! SAM: Added method to calculate the  explicitly
-			deltaGv = -R * Temperature &
-			             * log( dst%c_matrix(1,en) / prm%ceq_matrix(1) ) &
-			            / prm%molar_volume & 
-			          + prm%misfit_energy
-
-			radius_crit = -2.0_pReal * prm%gamma_coherent / deltaGv
+			! SAM: Added method to calculate the critical radius explicitly
+			radius_crit = calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
 						
-							
-!-----------------------------------------------------------------------------------------------------------------------------------
 		endif
 
 
