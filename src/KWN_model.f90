@@ -178,11 +178,14 @@ subroutine run_model(prm, dot, stt, dst, &
         dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
 
 		! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]
-		production_rate = 	prm%vacancy_generation*flow_stress*prm%atomic_volume/prm%vacancy_energy*prm%strain_rate &
-							+ 0.5*c_j*prm%atomic_volume/4.0/prm%burgers**3*prm%strain_rate
+		production_rate = 	prm%vacancy_generation * flow_stress * prm%atomic_volume * prm%strain_rate &
+		                         / prm%vacancy_energy &
+							+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
-		annihilation_rate =	prm%vacancy_diffusion0*exp(-prm%vacancy_migration_energy/kB/Temperature) &
-							*(dislocation_density/prm%dislocation_arrangement**2+1.0/prm%vacancy_sink_spacing**2)*stt%c_vacancy(en)
+		annihilation_rate =	prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / kB / Temperature ) &
+							* ( dislocation_density / prm%dislocation_arrangement**2 &
+							    + 1.0 / prm%vacancy_sink_spacing**2 ) &
+							* stt%c_vacancy(en)
 		
 
 
@@ -194,7 +197,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 		!update the diffusion coefficient as a function of the vacancy concentration
 		! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
-		diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb) &
+		diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / Temperature / kb) &
 								* (1.0 + stt%c_vacancy(en) / c_thermal_vacancy )! &
 							!	+2*(dislocation_density)*prm%atomic_volume/prm%burgers&
 							!	*prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
@@ -211,33 +214,42 @@ subroutine run_model(prm, dot, stt, dst, &
 
 		! expression of beta star for ternary alloys
 		if (dst%c_matrix(2,en)>0) then
-			beta_star = 4.0_pReal*PI&
-						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-						*1/(sum(1/diffusion_coefficient(:)*1/dst%c_matrix(:,en) ))
+			beta_star = 4.0_pReal * PI &
+						* radius_crit ** 2.0 / (prm%lattice_param ** 4.0) &
+						* 1 / ( sum( 1 / (diffusion_coefficient(:) * dst%c_matrix(:,en)) ) )
+		    print*, 'ternary alloys!', diffusion_coefficient(:)
 		! expression of beta star for binary alloys
 		else
-			beta_star = 4.0_pReal*PI&
-						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
-						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+			beta_star = 4.0_pReal * PI &
+						* radius_crit ** 2.0 / (prm%lattice_param ** 4.0) &
+						* 1 / ( ( 1 / (diffusion_coefficient(1)*dst%c_matrix(1,en)) ) )
+						
+		    print*, 'binary alloys!'
 !-----------------------------------------------------------------------------------------------------------------------------------
-							! SAM: Added method to calculate the  explicitly
-							deltaGv = -R*Temperature/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
+			! SAM: Added method to calculate the  explicitly
+			deltaGv = -R * Temperature &
+			             * log( dst%c_matrix(1,en) / prm%ceq_matrix(1) ) &
+			            / prm%molar_volume & 
+			          + prm%misfit_energy
 
-							radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
+			radius_crit = -2.0_pReal * prm%gamma_coherent / deltaGv
 						
 							
 !-----------------------------------------------------------------------------------------------------------------------------------
 		endif
 
 
-		incubation_time =  incubation*2.0/PI/zeldovich_factor/zeldovich_factor/beta_star
+		incubation_time = incubation * 2.0 &
+		                    / ( PI * zeldovich_factor**2.0 * beta_star )
 		print*, 'Incubation time', incubation_time
 
 		if (stt%time(en) > 0.0_pReal) then
-			nucleation_rate =   nucleation_site_density*zeldovich_factor*beta_star &
+			nucleation_rate =   nucleation_site_density * zeldovich_factor * beta_star &
 								* exp( &
-								- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/Temperature &
-								- incubation_time/stt%time(en) )
+								  - 4.0_pReal * PI * prm%gamma_coherent * radius_crit ** 2.0 &
+								     / ( 3.0_pReal * kB * Temperature ) &
+								  - incubation_time / stt%time(en) &
+								  )
 			print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
 			
 
