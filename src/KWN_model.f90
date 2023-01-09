@@ -3,6 +3,7 @@ module KWN_model
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate
+    use KWN_model_functions, only: calculate_shear_modulus
     
 contains
 
@@ -164,7 +165,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		print*, 'Temperature', T
 		print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
 		diffusion_coefficient = prm%diffusion0*exp(-(prm%migration_energy )/T/kb)
-		mu=(27.0+(21.5-27.0)/(650.0-273.0)*(T-273.0))*1.0e9; !McLellan 1987 MPa
+		mu = calculate_shear_modulus(T)
 
 
 		! if there is deformation, calculate the vacancy related parameters
