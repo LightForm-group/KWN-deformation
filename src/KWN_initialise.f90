@@ -420,6 +420,13 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 		write(1,*) '# Time [s], dislocation density [/m^2]'
 	close(1)
 
+	! this file will be used to store most of the results
+	filename = 'results/kinetics_data_'
+	filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+	open(1, file = filename,  ACTION="write", STATUS="replace")
+		write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
+	close(1)
+
 	! Write all the input parameters in a file
 	filename = 'results/KWN_parameters_'
 	filename = trim(testfolder)//trim(filename)//trim(filesuffix)
@@ -480,15 +487,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 		close(201)
 
 
-	! this file will be used to store most of the results
-	filename = 'results/kinetics_data_'
-	filename = trim(testfolder)//trim(filename)//trim(filesuffix)
 
-	open(1, file = filename,  ACTION="write", STATUS="replace")
-
-		write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
-
-	close(1)
 
 601 FORMAT(2E40.6)
 901 FORMAT(3E40.6)

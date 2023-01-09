@@ -216,7 +216,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 		!TODO: Have users set N_elements, and test for N_elements==2 here to define ternary alloy
 		! expression of beta star for ternary alloys
-		if (dst%c_matrix(2,en)>0) then
+		if (dst%c_matrix(2,en) > 0) then
 			beta_star = 4.0_pReal * PI &
 						* radius_crit ** 2.0 / (prm%lattice_param ** 4.0) &
 						* 1 / ( sum( 1 / (diffusion_coefficient(:) * dst%c_matrix(:,en)) ) )
@@ -462,7 +462,7 @@ subroutine run_model(prm, dot, stt, dst, &
 		! then go back to the previous step and decrease the time step
 
 
-		if  (      (stt%c_vacancy(en) <0.0_pReal) &
+		if  (      (stt%c_vacancy(en) < 0.0_pReal) &
 		      .OR. (minval(stt%precipitate_density(:,en)) < 0.0_pReal) &
 		      .OR. (minval(dst%c_matrix(:,en)) < 0.0_pReal) &
 		      .OR. any(isnan(stt%precipitate_density(:,en))) &
