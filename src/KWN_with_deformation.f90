@@ -181,7 +181,7 @@ program KWN
 		vol_int
 
 
-	character*100 :: filename !name of the gile where the outputs will be written
+	character*120 :: filename !name of the gile where the outputs will be written
 	character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
 	character*100 :: testfolder !folder where the input file is
 
@@ -308,7 +308,11 @@ program KWN
 	dt=min(dt_max, dt)
 
 	! define the output file suffix (contains T in °C and strain rate in /s)
-	write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(T)-273, prm%strain_rate
+	if (T-273<1000) then
+		write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(T)-273, prm%strain_rate
+	else 
+		write(filesuffix, '(I4,"C_strain_rate",ES9.3, ".txt")') int(T)-273, prm%strain_rate
+	endif
 
 	!! initialise the bins for the size distribution
 	! SAM: Adjusted binning
@@ -479,7 +483,10 @@ program KWN
 
 	!calculate the initial growth rate of precipitates of all sizes
 	call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
-
+	
+	if (radius_crit > maxval(prm%bins)) then
+		radius_crit=maxval(prm%bins)
+	endif
 	!the critical radius for dissolution if calculated from the precipitate growth rate array - display it
 	print*, 'radius crit:', radius_crit*1.0e9, ' nm'
 
@@ -671,7 +678,7 @@ program KWN
 
 	loop_time : do while  (stt%time(en).LE. total_time)
 
-
+					
   					k=k+1
      		 		print*, "dt:", dt
     		 		print*, 'Time:', stt%time(en)
@@ -739,6 +746,11 @@ program KWN
 										deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
 
 										radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
+										
+										! Madeleine - added this to prevent problems with dissolution 
+										if (radius_crit > maxval(prm%bins)) then
+											radius_crit=maxval(prm%bins)
+										endif
 									
 										
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -1159,6 +1171,8 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 									x_eq_interface(i) =ceq_matrix(1)*exp((2.0*molar_volume*gamma_coherent/(R*T*bins(i)*ceq_precipitate(1)))+molar_volume*misfit_energy/(R*T)) ! Gibbs Thomson effect for a precipitate with a single alloying element
 
 								endif
+								
+								
 
     						enddo    interface_equilibrium
 
