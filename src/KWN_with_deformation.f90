@@ -50,8 +50,9 @@ program KWN
 				burgers, & !matrice burgers vector
 				jog_formation_energy, & ! formation energy for jogs
 				q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-				solute_strength ! constant related to the solid solution hardening- cf [2]
-
+				solute_strength, & ! constant related to the solid solution hardening- cf [2]
+				enthalpy, &
+				entropy
 
 		! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 		real(pReal), dimension(:), allocatable :: &
@@ -289,7 +290,10 @@ program KWN
 	READ(1,*) prm%ceq_matrix(1) !equilibrium concentration in the matrix
 	READ(1,*) prm%ceq_matrix(2) !equilibrium concentration in the matrix
 	READ(1,*) incubation !incubation prefactor, either 0 or 1
+	READ(1,*) prm%entropy !formation entropy precipitates [J/mol/K]
+	READ(1,*) prm%enthalpy !formation entropy precipitates [J/mol]
 	CLOSE(1)
+
 
 
 	!!! some conversions
@@ -301,6 +305,8 @@ program KWN
 
 
 	prm%ceq_precipitate =real(stoechiometry(1:2))/real(sum(stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
+	
+
 
 	! initial value for the time step
 	dt=0.001
@@ -474,7 +480,12 @@ program KWN
 
 	temp_diffusion_coefficient=diffusion_coefficient(1)
 
-
+	! if the entropy and enthalpy are give, calculate the equilibrium
+	if (prm%entropy>0.0_pReal) then
+					call 			equilibrium_flat_interface(T,  N_elements,  stoechiometry, &
+									 prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+									 diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+	endif
 
 	!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
 	call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
@@ -678,7 +689,7 @@ program KWN
 
 	loop_time : do while  (stt%time(en).LE. total_time)
 
-					
+
   					k=k+1
      		 		print*, "dt:", dt
     		 		print*, 'Time:', stt%time(en)
@@ -730,7 +741,6 @@ program KWN
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
                      / 2.0_pReal/PI/radius_crit/radius_crit
 
-
 					! expression of beta star for ternary alloys
 					if (dst%c_matrix(2,en)>0) then
    						beta_star = 4.0_pReal*PI&
@@ -741,16 +751,18 @@ program KWN
               			beta_star = 4.0_pReal*PI&
               						* radius_crit*radius_crit/(prm%lattice_param**4.0) &
               						*1/((1/diffusion_coefficient(1)*1/dst%c_matrix(1,en) ))
+						
 !-----------------------------------------------------------------------------------------------------------------------------------
-										! SAM: Added method to calculate the  explicitly
-										deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
-
-										radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
+						! SAM: Added method to calculate the  explicitly
+						deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
+						! Madeleinec_eq_pr has been added otherwise Gibbs Thomson equation is not correct
+						radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)/prm%ceq_precipitate(1)
+						
 										
-										! Madeleine - added this to prevent problems with dissolution 
-										if (radius_crit > maxval(prm%bins)) then
+						! Madeleine - added this to prevent problems with dissolution 
+						if (radius_crit > maxval(prm%bins)) then
 											radius_crit=maxval(prm%bins)
-										endif
+						endif
 									
 										
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -766,6 +778,7 @@ program KWN
                              				- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
                              				- incubation_time/stt%time(en) )
 						print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
+						
 						
 
     				else
@@ -1115,6 +1128,63 @@ program KWN
 
 end program KWN
 
+subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
+									 c_matrix,x_eq, atomic_volume, na, molar_volume, ceq_precipitate, &
+									 diffusion_coefficient, volume_fraction, enthalpy, entropy)
+
+	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
+	implicit none
+	integer, parameter :: pReal = selected_real_kind(25)
+	integer, intent(in) :: N_elements
+	integer, intent(in), dimension(N_elements+1) :: stoechiometry
+	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient
+	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume,  enthalpy, entropy, volume_fraction
+	real(pReal), intent(inout), dimension(N_elements+1) :: x_eq
+	real(pReal) :: xmin, xmax, solubility_product, delta
+	integer :: i
+
+	xmin=0.0_pReal
+	xmax=1.0_pReal
+
+  
+
+
+   								solubility_product=exp(entropy/8.314-enthalpy/8.314/T)
+
+
+								xmin=0.0! 
+								xmax=atomic_volume*na/molar_volume*ceq_precipitate(1) ! the equilibrium concentration at the interface cannot be higher than the concentration in the precipitate
+
+								do while (abs(xmin-xmax)/xmax >0.0001.AND.xmax>1.0e-8)
+
+
+									x_eq(1)=(xmin+xmax)/2.0
+
+									!  find the intersection between stoichiometric line and solubility line by dichotomy
+									! delta=0 ==> intersection between stoichiometry and solubility line
+									delta = x_eq(1)**stoechiometry(1)*&
+											((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
+											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)*(1-x_eq(1)-((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
+											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction)))**stoechiometry(3)&
+											-solubility_product
+
+									if (delta<0.0_pReal) then
+										xmin=x_eq(1)
+									else
+										xmax=x_eq(1)
+									endif
+
+								enddo
+
+								! stoichiometry line to find x_eq
+								x_eq(2)=c_matrix(2)-real(stoechiometry(2))/real(stoechiometry(1))*(c_matrix(1)-x_eq(1))
+								
+
+
+
+return
+end subroutine
+
 
 subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 								c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
@@ -1172,7 +1242,6 @@ subroutine interface_composition(T,  N_elements, N_steps, stoechiometry, &
 
 								endif
 								
-								
 
     						enddo    interface_equilibrium
 
@@ -1205,9 +1274,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 	growth_rate_array = diffusion_coefficient(1)/bins&
 	* (c_matrix(1)    - x_eq_interface) &
 	/ (atomic_volume*na/molar_volume*ceq_precipitate(1) - x_eq_interface)
-
-
-
+	
     kwnbins_growth: do bin = 1, N_Steps-1
 
     					! consider two classes and their interface (radius_c)
@@ -1219,6 +1286,8 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
      					interface_c =x_eq_interface(bin)
 	  					! classical growth rate equation
 	  					growth_rate = growth_rate_array(bin)
+						
+						!print*, 'bin', radiusC, 'growth rqte', growth_rate
 						! if the growth rate is positive, precipitates grow (smaller class -> bigger class) and the flux is positive
       					if (growth_rate > 0.0_pReal) then
         					flux = precipitate_density(bin)*growth_rate
@@ -1236,14 +1305,17 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 						! in binary alloys, the critical radius can be explicitely calculated and it's made in the main program
 						! for ternary alloys, the critical radius is calculated as the bin at which the growth rate is zero
 						if (c_matrix(2)>0) then
-						
+						!if (1==1) then
 							if (growth_rate_array(bin-1)<0 .and. growth_rate_array(bin+1)>0) then
 								radius_crit=radiusC
+							
 									dot_precipitate_density(bin+1) = dot_precipitate_density(bin+1) &
 															+ nucleation_rate/(radiusR - radiusC)
 							endif
 						else
-							if (radiusL<=radius_crit.and.radiusC>radius_crit) then
+							
+							if (radiusL<=radius_crit.and.radiusC>radius_crit) then		
+						
 								dot_precipitate_density(bin+1) = dot_precipitate_density(bin+1) &
 															+ nucleation_rate/(radiusR - radiusC)
 							endif

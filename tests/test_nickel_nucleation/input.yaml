@@ -1,9 +1,9 @@
 
 #Deformation conditions
-T: 1293 # temperature in K
+T: 1193 # temperature in K
 strain_rate: 0.0  #/s - set to zero for static precipitation
 incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
-time: 5.0 #total deformation time [s]
+time: 500.0 #total deformation time [s]
 output_time_step: 0.01 # the outputs will be generated for this time step
 
 
@@ -31,7 +31,11 @@ gamma_coherent: 0.09 # coherent surface energy (J/m^2)
 solute_diffusion0: [2.94e-4, 2.94e-4] # prefactor diffusion coefficient Ti in Ni [m^2/s] these Anthony Seret
 solute_migration_energy: [269.0e+3,269.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
 #c_eq: [ 0.05488,0] # equilibrium concentration in Al and Ti in the matrix at 1020°C
-c_eq: [0.053, 0.0]#artificial value
+c_eq: [0.0548, 0.0] #equilibirum value 1293 K 0.0548
+enthalpy: 62.259e+3 #J/mol
+entropy: 22.6107 #J/mol/K
+
+
 #Vacancy model inputs
 
 vacancy_sink_spacing:  50.0e-6 # sink spacing, here grain size [m]
@@ -55,7 +59,7 @@ n: 6.68309
 
 
 ## KWN discretisation
-kwn_step0: 0.4e-9      # starting bin radius in linear scale (m)
-kwn_stepsize: 0.1e-9   # spacing between bins in linear scale  (m)
-kwn_nsteps: 20     # no. of radius bins
+kwn_step0: 0.9e-9      # starting bin radius in linear scale (m)
+kwn_stepsize: 0.2e-9   # spacing between bins in linear scale  (m)
+kwn_nsteps: 400     # no. of radius bins
 dt_max: 1.0 #maximum time increment  [s]

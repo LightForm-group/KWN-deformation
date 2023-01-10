@@ -7,9 +7,7 @@ test_name=sys.argv[1]
 a_yaml_file = open('{s}/input.yaml'.format(s=test_name))
 parsed_yaml_file = yaml.load(a_yaml_file, Loader=yaml.FullLoader)
 
-
-
-
+# to do - add default values for all fields
 with open('input.dat', 'w') as f:
 		f.write( "'%s' \n" % test_name)
 		f.write( "%.3e \n" % parsed_yaml_file['kwn_step0'])
@@ -54,4 +52,7 @@ with open('input.dat', 'w') as f:
 		f.write( "%.4e \n" % parsed_yaml_file['n'])
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][0])
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][1])
-		f.write( "%.d \n" % parsed_yaml_file['incubation'])
+		f.write( "%.d \n"  % parsed_yaml_file['incubation'])
+		f.write( "%.4e \n" % parsed_yaml_file.get('entropy', 2))
+		f.write( "%.4e \n" % parsed_yaml_file.get('enthalpy', 2))
+		
