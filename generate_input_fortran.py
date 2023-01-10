@@ -53,6 +53,8 @@ with open('input.dat', 'w') as f:
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][0])
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][1])
 		f.write( "%.d \n"  % parsed_yaml_file['incubation'])
-		f.write( "%.4e \n" % parsed_yaml_file.get('entropy', 2))
-		f.write( "%.4e \n" % parsed_yaml_file.get('enthalpy', 2))
+		f.write( "%.4e \n" % parsed_yaml_file.get('entropy', 0))
+		f.write( "%.4e \n" % parsed_yaml_file.get('enthalpy', 0))
+		f.write( "%.4e \n" % parsed_yaml_file.get('cooling_rate', 0))
+		f.write( "%.4e \n" % parsed_yaml_file.get('T_end', 293))
 		

@@ -52,7 +52,8 @@ program KWN
 				q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
 				solute_strength, & ! constant related to the solid solution hardening- cf [2]
 				enthalpy, &
-				entropy
+				entropy, &
+				cooling_rate
 
 		! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 		real(pReal), dimension(:), allocatable :: &
@@ -150,8 +151,8 @@ program KWN
 		A, &  ! constant in the sinepowerlaw for flow stress  [/s]
 		incubation, & ! incubation prefactor either 0 or 1
 		Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
-		n ! stress exponent in the sinepower law for flow stress
-
+		n, & ! stress exponent in the sinepower law for flow stress
+		T_end ! in case of non-isothermal treatment, temperature at the end of the cooling process
 	! the 'temp' variables are to store the previous step and adapt the time step at each iteration
 	real(pReal), dimension(:), allocatable ::   &
 		diffusion_coefficient, &  ! diffusion coefficient for Mg and Zn
@@ -292,6 +293,8 @@ program KWN
 	READ(1,*) incubation !incubation prefactor, either 0 or 1
 	READ(1,*) prm%entropy !formation entropy precipitates [J/mol/K]
 	READ(1,*) prm%enthalpy !formation entropy precipitates [J/mol]
+	READ(1,*) prm%cooling_rate !cooling rate [K/s]
+	READ(1,*) T_end !temperature end of cooling
 	CLOSE(1)
 
 
@@ -480,7 +483,7 @@ program KWN
 
 	temp_diffusion_coefficient=diffusion_coefficient(1)
 
-	! if the entropy and enthalpy are give, calculate the equilibrium
+	! if the entropy and enthalpy are given, calculate the equilibrium
 	if (prm%entropy>0.0_pReal) then
 					call 			equilibrium_flat_interface(T,  N_elements,  stoechiometry, &
 									 prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
@@ -685,14 +688,16 @@ program KWN
 	stt%time(en)=0
 	k=0
 
-
+	if (prm%cooling_rate>0) then
+		total_time=(T-T_end)/prm%cooling_rate
+	endif
 
 	loop_time : do while  (stt%time(en).LE. total_time)
 
 
   					k=k+1
      		 		print*, "dt:", dt
-    		 		print*, 'Time:', stt%time(en)
+    		 		print*, 'Time:', stt%time(en), '/', total_time,'s'
     		 		print*, 'Temperature', T
     	     		print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
 					diffusion_coefficient = prm%diffusion0*exp(-(prm%migration_energy )/T/kb)
@@ -813,6 +818,22 @@ program KWN
   					k1=dot%precipitate_density(:,en)
 
   					stt%time(en)=stt%time(en)+h/2.0
+					
+					if (prm%cooling_rate>0.0_pReal) then
+						T=T-prm%cooling_rate*h/2.0
+						! if the entropy and enthalpy are given, calculate the equilibrium
+						if (prm%entropy>0.0_pReal) then
+									call 			equilibrium_flat_interface(T,  N_elements,  stoechiometry, &
+													prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+													diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+						endif
+
+						!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
+						call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
+													prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
+													R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+													
+					endif
   					stt%precipitate_density(:,en)=temp_precipitate_density+h/2.0*k1
 
 
@@ -886,6 +907,22 @@ program KWN
   					! Runge Kutta k4 calculation
   					stt%precipitate_density(:,en)=temp_precipitate_density+h*k3
 					stt%time(en)= stt%time(en) +h/2.0
+					
+					if (prm%cooling_rate>0.0_pReal) then
+						T=T-prm%cooling_rate*h/2.0
+						! if the entropy and enthalpy are given, calculate the equilibrium
+						if (prm%entropy>0.0_pReal) then
+									call 			equilibrium_flat_interface(T,  N_elements,  stoechiometry, &
+													prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+													diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+						endif
+
+						!calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
+						call interface_composition( T,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
+													prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
+													R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+													
+					endif
 
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
     				zeldovich_factor = prm%atomic_volume*sqrt(prm%gamma_coherent/kB/T) &
@@ -1109,6 +1146,15 @@ program KWN
 		 						write(1, 901) stt%time(en), dislocation_density
 		 						901 FORMAT(3E40.6)
 		 					close(1)
+
+							if (prm%cooling_rate>0) then
+								filename='results/temperature_'
+           						filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+		 						open(1, file = filename,  ACTION="write", position="append")
+		 							write(1, 902) stt%time(en), T
+		 							902 FORMAT(2F40.6)
+		 						close(1)
+							endif
 
 
 	       					! next time for which the outputs should be written
