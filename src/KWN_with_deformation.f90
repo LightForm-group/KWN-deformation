@@ -437,7 +437,7 @@ program KWN
 		endif
 	endif
 
-	
+
 
 	!Write the initial precipitate distribution in a textfile
 	testfolder=trim(testfolder)//'/'
@@ -648,6 +648,13 @@ program KWN
 		write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
 	close(1)
 
+	! added temperature saving
+	filename='results/temperature_'
+	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+	open(1, file = filename,  ACTION="write", position="append")
+		write(1, 701) stt%time(en), T
+	close(1)
+
 	filename='results/dislocation_density_'
 	filename=trim(testfolder)//trim(filename)//trim(filesuffix)
 	open(1, file = filename,  ACTION="write", position="append")
@@ -698,7 +705,7 @@ program KWN
 
 					annihilation_rate =	prm%vacancy_diffusion0*exp(-prm%vacancy_migration_energy/kB/T) &
 										*(dislocation_density/prm%dislocation_arrangement**2+1.0/prm%vacancy_sink_spacing**2)*stt%c_vacancy(en)
-					
+
 
 
   					! variation in vacancy concentration
@@ -715,7 +722,7 @@ program KWN
   	 						 			!	*prm%diffusion0*exp(-(prm%q_dislocation )/T/kb)
 
 
-				
+
 
     				! calculate nucleation rate
     				nucleation_site_density = sum(dst%c_matrix(:,en))/prm%atomic_volume
@@ -739,8 +746,8 @@ program KWN
 										deltaGv = -R*T/prm%molar_volume*log(dst%c_matrix(1,en)/prm%ceq_matrix(1)) + prm%misfit_energy
 
 										radius_crit = -2.0_pReal*prm%gamma_coherent / (deltaGv)
-									
-										
+
+
 !-----------------------------------------------------------------------------------------------------------------------------------
               		endif
 
@@ -754,7 +761,7 @@ program KWN
                              				- 4.0_pReal*PI*prm%gamma_coherent*radius_crit*radius_crit/3.0_pReal/kB/T &
                              				- incubation_time/stt%time(en) )
 						print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
-						
+
 
     				else
       					nucleation_rate = 0.0_pReal
@@ -945,7 +952,7 @@ program KWN
       				if (dst%total_precipitate_density(en) > 0.0_pReal) then
       							dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
                                      							/ dst%total_precipitate_density(en)
-								
+
 	 				endif
 
 
@@ -963,7 +970,7 @@ program KWN
     				print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
 						print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
 						print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
-						
+
 
    					! Adapt time step so that the outputs do not vary to much between too time steps
     				!if  either:
@@ -1070,6 +1077,14 @@ program KWN
 		 						write(1, 601) stt%time(en), diffusion_coefficient(1)
 		 						601 FORMAT(2E40.6)
 		 					close(1)
+
+							! added temperature saving
+							filename='results/temperature_'
+							filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+							open(1, file = filename,  ACTION="write", position="append")
+								write(1, 601) stt%time(en), T
+								701 FORMAT(2E40.6)
+							close(1)
 
 		 					filename='results/vacancies_'
 		 					filename=trim(testfolder)//trim(filename)//trim(filesuffix)
@@ -1222,7 +1237,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 						! in binary alloys, the critical radius can be explicitely calculated and it's made in the main program
 						! for ternary alloys, the critical radius is calculated as the bin at which the growth rate is zero
 						if (c_matrix(2)>0) then
-						
+
 							if (growth_rate_array(bin-1)<0 .and. growth_rate_array(bin+1)>0) then
 								radius_crit=radiusC
 									dot_precipitate_density(bin+1) = dot_precipitate_density(bin+1) &
@@ -1235,8 +1250,8 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 							endif
 
 						endif
-					
-					
+
+
 					enddo kwnbins_growth
 
 end subroutine growth_precipitate
