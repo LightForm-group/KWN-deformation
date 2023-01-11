@@ -60,5 +60,35 @@ function calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
 end function calculate_binary_alloy_critical_radius
 
 
+function calculate_beta_star(radius_crit, lattice_param, &
+                              diffusion_coefficient, c_matrix, en)
+    real(pReal), intent(in) :: radius_crit
+    real(pReal), intent(in) :: lattice_param
+    real(pReal), dimension(:), allocatable, intent(in) ::   &
+		diffusion_coefficient  ! diffusion coefficient for Mg and Zn
+	real(pReal), dimension(:,:), allocatable, intent(in) :: c_matrix
+	integer, intent(in) :: en
+	
+	real(pReal) :: calculate_beta_star
+
+	!TODO: Eventually the sizes of diffusion coefficient and c_matrix should be adjusted
+	!      in the main code, so that there is not empty space in these when working with 
+	!      binary alloys. Once that happens we can use the ternary alloy solution for 
+	!      all calculations. 
+
+	! expression of beta star for ternary alloys
+	if (c_matrix(2,en) > 0) then
+		calculate_beta_star = 4.0_pReal * PI &
+					* radius_crit ** 2.0 / (lattice_param ** 4.0) &
+					* 1 / ( sum( 1 / (diffusion_coefficient(:) * c_matrix(:,en)) ) )
+	! expression of beta star for binary alloys
+	else
+		calculate_beta_star = 4.0_pReal * PI &
+					* radius_crit ** 2.0 / (lattice_param ** 4.0) &
+					* 1 / ( ( 1 / (diffusion_coefficient(1) * c_matrix(1,en)) ) )
+										
+	endif
+
+end function calculate_beta_star
 
 end module KWN_model_functions

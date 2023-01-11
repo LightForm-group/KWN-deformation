@@ -301,6 +301,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 								R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
 	!TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
+	! calculate critical radius in the case of a binary alloy
 	if (dst%c_matrix(2,en)==0) then
 	    radius_crit = calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
     end if
