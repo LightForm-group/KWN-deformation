@@ -38,7 +38,7 @@ Samuel Engel, University of Manchester
 
 ## Copyright & Licensing
 
-This software has been developed as part of the [Lightform project](http://lightform.org.uk/) at University of Manchester. 
+This software has been developed as part of the [Lightform project](http://lightform.org.uk/) at the University of Manchester. 
 
 - Copyright 2023 [University of Manchester](https://www.manchester.ac.uk/)
 
