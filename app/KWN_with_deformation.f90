@@ -17,54 +17,54 @@ program KWN
     use KWN_initialise, only: initialise_model_state
     use KWN_model, only: run_model
     
-	implicit none
+    implicit none
 
 
-	!--------------------------------------------------------------------------------------------------
-	! containers for parameters and state
-	type(tParameters) :: prm
-	type(tKwnpowerlawState) ::  dot, &
-								stt
-	type(tKwnpowerlawMicrostructure) :: dst
+    !--------------------------------------------------------------------------------------------------
+    ! containers for parameters and state
+    type(tParameters) :: prm
+    type(tKwnpowerlawState) ::  dot, &
+                                stt
+    type(tKwnpowerlawMicrostructure) :: dst
 
-	integer :: &
-		Nmembers, &
-		N_elements, & ! number of different elements in the precipitate
-		en
+    integer :: &
+        Nmembers, &
+        N_elements, & ! number of different elements in the precipitate
+        en
 
-	integer, dimension(:), allocatable :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
+    integer, dimension(:), allocatable :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
 
-	real(pReal), dimension(:,:), allocatable :: &
-		normalized_distribution_function !normalised distribution for the precipitate size
-	real(pReal), dimension(:), allocatable :: &
-		growth_rate_array, &!array that contains the precipitate growth rate of each bin
-		x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
+    real(pReal), dimension(:,:), allocatable :: &
+        normalized_distribution_function !normalised distribution for the precipitate size
+    real(pReal), dimension(:), allocatable :: &
+        growth_rate_array, &!array that contains the precipitate growth rate of each bin
+        x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
 
-	real(pReal) :: &
-		Temperature, & !temperature in K
-		radius_crit, & !critical radius, [m]
-		interface_c, & !interface composition between matrix and a precipitate
-		time_record_step, & ! time step for the output [s]
-		c_thermal_vacancy, & ! concentration in thermal vacancies
-		shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
-		sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
-		A, &  ! constant in the sinepowerlaw for flow stress  [/s]
-		incubation, & ! incubation prefactor either 0 or 1
-		Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
-		n ! stress exponent in the sinepower law for flow stress
+    real(pReal) :: &
+        Temperature, & !temperature in K
+        radius_crit, & !critical radius, [m]
+        interface_c, & !interface composition between matrix and a precipitate
+        time_record_step, & ! time step for the output [s]
+        c_thermal_vacancy, & ! concentration in thermal vacancies
+        shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
+        sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
+        A, &  ! constant in the sinepowerlaw for flow stress  [/s]
+        incubation, & ! incubation prefactor either 0 or 1
+        Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
+        n ! stress exponent in the sinepower law for flow stress
 
-	! the 'temp' variables are to store the previous step and adapt the time step at each iteration
-	real(pReal), dimension(:), allocatable ::   &
-		diffusion_coefficient  ! diffusion coefficient for Mg and Zn
+    ! the 'temp' variables are to store the previous step and adapt the time step at each iteration
+    real(pReal), dimension(:), allocatable ::   &
+        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
-	real(pReal) :: &
-		dt, & !time step for integration [s]
-		dt_max, & ! max time step for integration [s]
-		total_time ![s]
+    real(pReal) :: &
+        dt, & !time step for integration [s]
+        dt_max, & ! max time step for integration [s]
+        total_time ![s]
 
-	character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
-	character*100 :: testfolder !folder where the input file is
+    character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
+    character*100 :: testfolder !folder where the input file is
 
 
     call initialise_model_state(prm, dot, stt, dst, &
