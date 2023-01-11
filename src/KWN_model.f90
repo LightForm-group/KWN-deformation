@@ -190,13 +190,13 @@ subroutine run_model(prm, dot, stt, dst, &
                                 + 1.0 / prm%vacancy_sink_spacing**2 ) &
                             * stt%c_vacancy(en)
         
-
-
         ! variation in vacancy concentration
         dot%c_vacancy(en) = production_rate - annihilation_rate
 
         ! total number of vacancies
         stt%c_vacancy(en) = stt%c_vacancy(en) + dot%c_vacancy(en) * dt
+
+
 
         !update the diffusion coefficient as a function of the vacancy concentration
         ! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
@@ -205,8 +205,10 @@ subroutine run_model(prm, dot, stt, dst, &
                             !   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
                             !   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
 
+        !------ end of setting constants for timestep
 
-    
+
+
 
         ! calculate nucleation rate
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
@@ -220,6 +222,9 @@ subroutine run_model(prm, dot, stt, dst, &
                                         diffusion_coefficient, dst%c_matrix, en)
 
         !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
+        !TODO: Doug: I think this should be calculated before beta_star in each timestep
+        !            (it will converge towards the same answer either way, but with slightly
+        !             different strain rates early in the simulation)
         ! calculate critical radius in the case of a binary alloy
         if (dst%c_matrix(2,en)==0) then
             radius_crit = calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
@@ -234,10 +239,7 @@ subroutine run_model(prm, dot, stt, dst, &
             nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
                                    prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
                                    stt%time, en)
-
             print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
-            
-
         else
             nucleation_rate = 0.0_pReal
         endif
@@ -389,15 +391,15 @@ subroutine run_model(prm, dot, stt, dst, &
                         !update precipitate density
                         dst%total_precipitate_density = dst%total_precipitate_density &
                                                         + stt%precipitate_density(bin,en) &
-                                                        *(radiusR - radiusL)
+                                                        * (radiusR - radiusL)
                         !update average radius
                         dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
                                                         + stt%precipitate_density(bin,en) &
-                                                        * (radiusR**2.0_pReal - radiusL**2.0_pReal)/2.0_pReal ! at that stage in m/m^3
+                                                        * (radiusR**2.0_pReal - radiusL**2.0_pReal) / 2.0_pReal ! at that stage in m/m^3
                         !update volume fraction
 
                         dst%precipitate_volume_frac(en) = dst%precipitate_volume_frac(en) &
-                                                        + 1.0_pReal/6.0_pReal*PI &
+                                                        + 1.0_pReal / 6.0_pReal * PI &
                                                         * (radiusR + radiusL)**3.0_pReal &
                                                         * (radiusR - radiusL) &
                                                         * stt%precipitate_density(bin,en)
@@ -504,11 +506,11 @@ subroutine run_model(prm, dot, stt, dst, &
                 ! next time for which the outputs should be written
                         if (time_record_step > 0) then
                             !Save data linearly
-                            time_record=time_record+time_record_step
+                            time_record = time_record + time_record_step
 
                         else
                             !save data logarithimically
-                            time_record =time_record+10**(INT(LOG10(stt%time(en)))-1)
+                            time_record = time_record + 10**(INT(LOG10(stt%time(en)))-1)
 
                   endif
 
