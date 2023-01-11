@@ -2,9 +2,9 @@ module KWN_model
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_routines, only: interface_composition, growth_precipitate
-    use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density, &
-                                   calculate_binary_alloy_critical_radius, &
+    use KWN_model_routines, only: interface_composition, growth_precipitate, &
+                                  update_precipate_properties, set_initial_timestep_constants
+    use KWN_model_functions, only: calculate_binary_alloy_critical_radius, &
                                    calculate_beta_star, calculate_nucleation_rate
     use KWN_io, only: output_results
     
@@ -84,13 +84,9 @@ subroutine run_model(prm, dot, stt, dst, &
         radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
         growth_rate, flux, & ! growth rate and flux between different bins for the precipitates
         time_record, & ! used to record the outputs in files
-        flow_stress, & ! flow stress in the material [Pa]
-        dislocation_density, & ![/m^2]
         production_rate, & ! production rate for excess vacancies
         annihilation_rate, & !annihilation rate for excess vacancies
-        mu, & !shear modulus [Pa]
-        c_j, & ! jog concentration - ref [1]
-        strain !macroscopic strain
+        dislocation_density ![/m^2]
 
 
     real(pReal), dimension(:,:), allocatable :: &
@@ -167,47 +163,11 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Temperature', Temperature
         print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
         
-        diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / (Temperature * kb) )
-        mu = calculate_shear_modulus(Temperature)
-
-
-        ! if there is deformation, calculate the vacancy related parameters
-
-
-        flow_stress = sigma_r * asinh(((prm%strain_rate / (A)) * exp(Q_stress / ( 8.314 * Temperature) )) ** (1/n))
-        c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
-        c_j = exp(-prm%jog_formation_energy / (kB * Temperature) )
-        strain = prm%strain_rate * stt%time(en)
-        dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
-
-        ! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]
-        production_rate =   prm%vacancy_generation * flow_stress * prm%atomic_volume * prm%strain_rate &
-                                 / prm%vacancy_energy &
-                            + 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
-
-        annihilation_rate = prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * Temperature) ) &
-                            * ( dislocation_density / prm%dislocation_arrangement**2 &
-                                + 1.0 / prm%vacancy_sink_spacing**2 ) &
-                            * stt%c_vacancy(en)
         
-        ! variation in vacancy concentration
-        dot%c_vacancy(en) = production_rate - annihilation_rate
-
-        ! total number of vacancies
-        stt%c_vacancy(en) = stt%c_vacancy(en) + dot%c_vacancy(en) * dt
-
-
-
-        !update the diffusion coefficient as a function of the vacancy concentration
-        ! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
-        diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / (Temperature * kb) ) &
-                                * (1.0 + stt%c_vacancy(en) / c_thermal_vacancy )! &
-                            !   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-                            !   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
-
-        !------ end of setting constants for timestep
-
-
+        call set_initial_timestep_constants(prm, stt, dot, Temperature, sigma_r, A, Q_stress, n, dt, en, &
+                                          diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
+                                          production_rate, annihilation_rate)
+                                          
 
 
         ! calculate nucleation rate
@@ -222,7 +182,8 @@ subroutine run_model(prm, dot, stt, dst, &
                                         diffusion_coefficient, dst%c_matrix, en)
 
         !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
-        !TODO: Doug: I think this should be calculated before beta_star in each timestep
+        !TODO: Doug: I think this should be calculated before beta_star in each timestep,
+        !            in the setting of initial timestep constants
         !            (it will converge towards the same answer either way, but with slightly
         !             different strain rates early in the simulation)
         ! calculate critical radius in the case of a binary alloy
@@ -247,7 +208,7 @@ subroutine run_model(prm, dot, stt, dst, &
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
         !calculate the precipitate growth in all bins dot%precipitate_density
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                     x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                     stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
                                     diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
@@ -377,49 +338,9 @@ subroutine run_model(prm, dot, stt, dst, &
         !Runge Kutta, calculate precipitate density in all bins (/m^4)
         stt%precipitate_density(:,en) = temp_precipitate_density + h / 6.0 * (k1 + 2.0*k2 + 2.0*k3 + k4)
 
-        !stt%precipitate density contains all information to calculate mean radius, volume fraction and avg radius - calculate them now
-        dst%precipitate_volume_frac(en) = 0.0_pReal
-        dst%total_precipitate_density(en) = 0.0_pReal
-        dst%avg_precipitate_radius(en) = 0.0_pReal
 
-        ! update radius, total precipitate density and volume fraction
-
-        kwnbins:    do bin=1,prm%kwn_nSteps
-                        radiusL = prm%bins(bin-1)
-                        radiusR = prm%bins(bin  )
-
-                        !update precipitate density
-                        dst%total_precipitate_density = dst%total_precipitate_density &
-                                                        + stt%precipitate_density(bin,en) &
-                                                        * (radiusR - radiusL)
-                        !update average radius
-                        dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
-                                                        + stt%precipitate_density(bin,en) &
-                                                        * (radiusR**2.0_pReal - radiusL**2.0_pReal) / 2.0_pReal ! at that stage in m/m^3
-                        !update volume fraction
-
-                        dst%precipitate_volume_frac(en) = dst%precipitate_volume_frac(en) &
-                                                        + 1.0_pReal / 6.0_pReal * PI &
-                                                        * (radiusR + radiusL)**3.0_pReal &
-                                                        * (radiusR - radiusL) &
-                                                        * stt%precipitate_density(bin,en)
-
-
-                    enddo kwnbins
-        ! mean radius from m/m^3 to m
-        if (dst%total_precipitate_density(en) > 0.0_pReal) then
-                    dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
-                                                    / dst%total_precipitate_density(en)
-                    
-        endif
-
-
-        !update matrix composition
-
-         dst%c_matrix(:,en) = (prm%c0_matrix(:) - dst%precipitate_volume_frac(en) * prm%ceq_precipitate(:)) &
-                                / (1 - dst%precipitate_volume_frac(en))
-
-
+        ! update precipate (dst) volume frac, density, avg radius, and matrix composition
+        call update_precipate_properties(prm, dst, stt, en)
 
 
         ! print*, ''
@@ -451,13 +372,13 @@ subroutine run_model(prm, dot, stt, dst, &
             dst%avg_precipitate_radius(en) = temp_avg_precipitate_radius
             dst%precipitate_volume_frac(en) = temp_precipitate_volume_frac
             dst%c_matrix(:,en) = temp_c_matrix
-            stt%c_vacancy(en) = temp_c_vacancy
-            dislocation_density = temp_dislocation_density
+            !stt%c_vacancy(en) = temp_c_vacancy
+            !dislocation_density = temp_dislocation_density
             Temperature = Temperature_temp
-            radius_crit = temp_radius_crit
+            !radius_crit = temp_radius_crit
             prm%ceq_matrix = temp_x_eq_matrix
             x_eq_interface = temp_x_eq_interface
-            diffusion_coefficient(1) = temp_diffusion_coefficient
+            !diffusion_coefficient(1) = temp_diffusion_coefficient
 
             !decrease time step by a factor arbitrarily chose (2)
             dt = 0.5 * dt
@@ -486,13 +407,13 @@ subroutine run_model(prm, dot, stt, dst, &
             temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
             temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)
             temp_c_matrix = dst%c_matrix(:,en)
-            temp_radius_crit = radius_crit
+            !temp_radius_crit = radius_crit
             temp_x_eq_matrix = prm%ceq_matrix
             temp_x_eq_interface = x_eq_interface
-            temp_c_vacancy = stt%c_vacancy(en)
-            temp_dislocation_density = dislocation_density
+            !temp_c_vacancy = stt%c_vacancy(en)
+            !temp_dislocation_density = dislocation_density
             Temperature_temp = Temperature
-            temp_diffusion_coefficient = diffusion_coefficient(1)
+            !temp_diffusion_coefficient = diffusion_coefficient(1)
 
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds

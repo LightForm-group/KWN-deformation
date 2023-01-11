@@ -1,8 +1,144 @@
 module KWN_model_routines
 
-use KWN_precision
+    use KWN_parameters
+    use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
+    use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density
+
 
 contains
+
+
+subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, sigma_r, A, Q_stress, n, dt, en, &
+                                          diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
+                                          production_rate, annihilation_rate)
+
+    implicit none
+    type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawState), intent(inout) :: dot, stt
+    real(pReal), intent(in) :: &
+        Temperature, & !temperature in K
+        sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
+        A, &  ! constant in the sinepowerlaw for flow stress  [/s]
+        Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
+        n, & ! stress exponent in the sinepower law for flow stress
+        dt !time step for integration [s]
+    integer, intent(in) :: en
+
+    real(pReal), dimension(:), allocatable, intent(out) ::   &
+        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
+
+    real(pReal), intent(out) :: &
+        c_thermal_vacancy, & ! concentration in thermal vacancies
+        production_rate, & ! production rate for excess vacancies
+        annihilation_rate, & !annihilation rate for excess vacancies
+        dislocation_density ![/m^2]
+
+    real(pReal) :: &
+        mu, & !shear modulus [Pa]
+        flow_stress, & ! flow stress in the material [Pa]
+        c_j, & ! jog concentration - ref [1]
+        strain !macroscopic strain
+    
+
+	diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / (Temperature * kb) )
+	mu = calculate_shear_modulus(Temperature)
+
+
+	! if there is deformation, calculate the vacancy related parameters
+
+
+	flow_stress = sigma_r * asinh(((prm%strain_rate / (A)) * exp(Q_stress / ( 8.314 * Temperature) )) ** (1/n))
+	c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
+	c_j = exp(-prm%jog_formation_energy / (kB * Temperature) )
+	strain = prm%strain_rate * stt%time(en)
+	dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
+
+	! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]
+	production_rate =   prm%vacancy_generation * flow_stress * prm%atomic_volume * prm%strain_rate &
+							 / prm%vacancy_energy &
+						+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
+
+	annihilation_rate = prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * Temperature) ) &
+						* ( dislocation_density / prm%dislocation_arrangement**2 &
+							+ 1.0 / prm%vacancy_sink_spacing**2 ) &
+						* stt%c_vacancy(en)
+	
+	! variation in vacancy concentration
+	dot%c_vacancy(en) = production_rate - annihilation_rate
+
+	! total number of vacancies
+	stt%c_vacancy(en) = stt%c_vacancy(en) + dot%c_vacancy(en) * dt
+
+
+
+	!update the diffusion coefficient as a function of the vacancy concentration
+	! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
+	diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / (Temperature * kb) ) &
+							* (1.0 + stt%c_vacancy(en) / c_thermal_vacancy )! &
+						!   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+						!   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
+
+end subroutine set_initial_timestep_constants
+
+
+subroutine update_precipate_properties(prm, dst, stt, en)
+
+    implicit none
+    type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawState), intent(in) ::  stt
+    type(tKwnpowerlawMicrostructure), intent(inout) :: dst
+    integer, intent(in) :: en
+
+    integer :: bin
+    real(pReal) :: radiusL, radiusR
+
+	!stt%precipitate density contains all information to calculate mean radius, volume fraction and avg radius - calculate them now
+	dst%precipitate_volume_frac(en) = 0.0_pReal
+	dst%total_precipitate_density(en) = 0.0_pReal
+	dst%avg_precipitate_radius(en) = 0.0_pReal
+
+
+	! update radius, total precipitate density and volume fraction
+
+	kwnbins:    do bin=1,prm%kwn_nSteps
+					radiusL = prm%bins(bin-1)
+					radiusR = prm%bins(bin  )
+
+					!update precipitate density
+					dst%total_precipitate_density = dst%total_precipitate_density &
+													+ stt%precipitate_density(bin,en) &
+													* (radiusR - radiusL)
+					!update average radius
+					dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
+													+ stt%precipitate_density(bin,en) &
+													* (radiusR**2.0_pReal - radiusL**2.0_pReal) / 2.0_pReal ! at that stage in m/m^3
+					!update volume fraction
+
+					dst%precipitate_volume_frac(en) = dst%precipitate_volume_frac(en) &
+													+ 1.0_pReal / 6.0_pReal * PI &
+													* (radiusR + radiusL)**3.0_pReal &
+													* (radiusR - radiusL) &
+													* stt%precipitate_density(bin,en)
+
+
+				enddo kwnbins
+	! mean radius from m/m^3 to m
+	if (dst%total_precipitate_density(en) > 0.0_pReal) then
+				dst%avg_precipitate_radius(en) = dst%avg_precipitate_radius(en) &
+												/ dst%total_precipitate_density(en)
+				
+	endif
+
+
+	!update matrix composition
+
+	 dst%c_matrix(:,en) = (prm%c0_matrix(:) - dst%precipitate_volume_frac(en) * prm%ceq_precipitate(:)) &
+							/ (1 - dst%precipitate_volume_frac(en))
+
+
+end subroutine update_precipate_properties
+
+
 
 subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometry, &
                                 c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
