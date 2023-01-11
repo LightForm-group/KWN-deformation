@@ -5,7 +5,7 @@ module KWN_model
     use KWN_model_routines, only: interface_composition, growth_precipitate
     use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density, &
                                    calculate_binary_alloy_critical_radius, &
-                                   calculate_beta_star
+                                   calculate_beta_star, calculate_nucleation_rate
     use KWN_io, only: output_results
     
 contains
@@ -231,12 +231,10 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Incubation time', incubation_time
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate =   nucleation_site_density * zeldovich_factor * beta_star &
-                                * exp( &
-                                  - 4.0_pReal * PI * prm%gamma_coherent * radius_crit ** 2.0 &
-                                     / ( 3.0_pReal * kB * Temperature ) &
-                                  - incubation_time / stt%time(en) &
-                                  )
+            nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
+                                   prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
+                                   stt%time, en)
+
             print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
             
 
@@ -291,14 +289,9 @@ subroutine run_model(prm, dot, stt, dst, &
         incubation_time = incubation * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = nucleation_site_density * zeldovich_factor * beta_star &
-                              * exp( &
-                                    - 4.0_pReal * PI * prm%gamma_coherent &
-                                      * radius_crit * radius_crit &
-                                      / (3.0_pReal * kB * Temperature) &
-                                    - incubation_time / stt%time(en) )
-
-
+            nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
+                                   prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
+                                   stt%time, en)
         else
             nucleation_rate = 0.0_pReal
         endif
@@ -355,12 +348,9 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         if (stt%time(en) > 0.0_pReal) then
-                nucleation_rate = nucleation_site_density * zeldovich_factor * beta_star &
-                                  * exp( &
-                                        - 4.0_pReal * PI * prm%gamma_coherent * radius_crit**2 &
-                                          / ( 3.0_pReal * kB * Temperature ) &
-                                        - incubation_time/stt%time(en) &
-                                    )
+                nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
+                                   prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
+                                   stt%time, en)
         else
                 nucleation_rate = 0.0_pReal
         endif
