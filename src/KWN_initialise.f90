@@ -108,7 +108,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                             Q_stress, &  ![J/mol] - activation energy in flow stress law
                             n, &  !exponent in sinepower law for stress
                             incubation, & !incubation prefactor, either 0 or 1)
-                            stoechiometry & 
+                            stoechiometry, &
+                            N_elements & 
                             )
     
     !-------- add a backslash to the folder path

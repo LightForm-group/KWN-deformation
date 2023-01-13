@@ -62,7 +62,7 @@ with open('input.namelist', 'w') as f:
 		f.write( f"kwn_step0 = {parsed_yaml_file['kwn_step0']:.3e} \n")
 		f.write( f"kwn_stepsize = {parsed_yaml_file['kwn_stepsize']:.3e} \n")
 		f.write( f"kwn_nsteps = {parsed_yaml_file['kwn_nsteps']:d} \n")
-		f.write( f"T = {parsed_yaml_file['T']:f} \n")
+		f.write( f"Temperature = {parsed_yaml_file['T']:f} \n")
 		f.write( f"strain_rate = {parsed_yaml_file['strain_rate']:.3e} \n")
 		f.write( f"lattice_param = {parsed_yaml_file['lattice_parameter']:.1e} \n")
 		f.write( f"atomic_volume = {parsed_yaml_file['atomic_volume']:.1e} \n")
