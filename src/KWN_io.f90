@@ -98,9 +98,9 @@ subroutine read_configuration( &
 
 
 
-    ! Read the inputs from the input.dat fil
+    ! Read the inputs from the input.namelist file
     !!!!!!!!!!!
-    OPEN (UNIT=1, FILE='input.namelist', STATUS='OLD', ACTION='READ', IOSTAT=status)
+    OPEN (UNIT=1, FILE='namelist.input', STATUS='OLD', ACTION='READ', IOSTAT=status)
     print*, status
     read(1, config )
     CLOSE(1)
@@ -132,7 +132,12 @@ subroutine read_configuration( &
     prm%diffusion0 = diffusion0
     prm%migration_energy = migration_energy
 
-
+    ! Write the namelist to our test folder, for record keeping
+    open (unit=1, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
+    print*, status
+    write(1, config)
+    close(1)
+    
 end subroutine read_configuration
 
 

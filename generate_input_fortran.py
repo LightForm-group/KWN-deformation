@@ -56,7 +56,7 @@ with open('input.dat', 'w') as f:
 		f.write( "%.4e \n" % parsed_yaml_file['c_eq'][1])
 		f.write( "%.d \n" % parsed_yaml_file['incubation'])
 
-with open('input.namelist', 'w') as f:
+with open('namelist.input', 'w') as f:
 		f.write( "&config\n" )
 		f.write( f"testfolder = '{test_name}' \n")
 		f.write( f"kwn_step0 = {parsed_yaml_file['kwn_step0']:.3e} \n")
