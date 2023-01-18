@@ -1,9 +1,9 @@
 
 #Deformation conditions
-T: 1193 # temperature in K
+T: 1353 # temperature in K
 strain_rate: 0.0  #/s - set to zero for static precipitation
-incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
-cooling_rate: 1 #K/s
+incubation: 1.0 # 1 or 0, set to 0 for no precipitate incubation time
+cooling_rate: 0.61 #K/s
 time: 500.0 #total deformation time [s]
 T_end: 293 #temperature end of cooling in K
 output_time_step: 0.5 # the outputs will be generated for this time step
@@ -17,7 +17,7 @@ dispersion_parameter: 0.2 # s for a log normal distribution
 
 
 #Composition
-c0_matrix: [  0.0645, 0.0]  #bulk composition in [Al+Ti, ] in atomic fraction - IN THE MATRIX assuming vf = 13.88 % - corresponds to equilibrium at 1050°C
+c0_matrix: [  0.0759, 0.0]  #bulk composition in [Al+Ti, ] in atomic fraction -0.076 is the equilibrium concentration in the matrix at 1080°C
 stoichiometry: [1, 0, 3] #stoichiometry of the precipitate  [Al, Ti, Ni]
 
 
@@ -30,10 +30,13 @@ misfit_energy: 0.0 # elastic misfit energy (J/m^3)  11.422e+6
 gamma_coherent: 0.09 # coherent surface energy (J/m^2)  
 #solute_diffusion0: [4.3e-6, 4.3e-6] # prefactor diffusion coefficient Ti in Ni [m^2/s] Javad Sohrabi 2019 4.3e-6 - test with twice this value
 #solute_migration_energy: [256.0e+3,256.0e+3] # activation energy for solute diffusion (Ti in Ni) Javad Sohrabi 2019
+#solute_diffusion0: [2.94e-4, 2.94e-4] # prefactor diffusion coefficient Ti in Ni [m^2/s] these Anthony Seret
+#solute_migration_energy: [269.0e+3,269.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
+#fitted values Madeleine
 solute_diffusion0: [2.94e-4, 2.94e-4] # prefactor diffusion coefficient Ti in Ni [m^2/s] these Anthony Seret
-solute_migration_energy: [269.0e+3,269.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
+solute_migration_energy: [285.0e+3,285.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
 #c_eq: [ 0.05488,0] # equilibrium concentration in Al and Ti in the matrix at 1020°C
-c_eq: [0.0548, 0.0] #equilibrium value 1293 K 0.0548
+c_eq: [0.075, 0.0] #equilibrium value 1293 K 0.0548
 enthalpy: 62.259e+3 #J/mol 
 entropy: 22.6107 #J/mol/K
 
@@ -61,7 +64,11 @@ n: 6.68309
 
 
 ## KWN discretisation
-kwn_step0: 0.9e-9      # starting bin radius in linear scale (m)
-kwn_stepsize: 0.2e-9   # spacing between bins in linear scale  (m)
-kwn_nsteps: 400     # no. of radius bins
+kwn_step0: 1.7e-9     # starting bin radius in linear scale (m)
+kwn_stepsize: 0.2e-9  # spacing between bins in linear scale  (m)
+kwn_nsteps: 620     # no. of radius bins
 dt_max: 1.0 #maximum time increment  [s]
+
+
+#Minimal detectable size for precipitates - to compare experiments and calculations
+detectable_size: 2.0e-9

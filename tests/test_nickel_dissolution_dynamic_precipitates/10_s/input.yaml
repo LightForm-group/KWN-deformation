@@ -1,21 +1,27 @@
 
 #Deformation conditions
-T: 1363 # temperature in K
+T: 1323 # temperature in K
 strain_rate: 0.0  #/s - set to zero for static precipitation
-incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
-time: 10000.0 #total deformation time [s]
-output_time_step: 0.1 # the outputs will be generated for this time step
+incubation: 1.0 # 1 or 0, set to 0 for no precipitate incubation time
+cooling_rate: 0.0 #K/s
+time: 10.0 #total deformation time [s]
+T_end: 293 #temperature end of cooling in K
+output_time_step: 1 # the outputs will be generated for this time step
 
 
 #Initial distribution
-initial_mean_radius: 2.1e-6  #[m]
-initial_volume_fraction: 0.125
+initial_mean_radius: 1.5e-6  #[m]
+initial_volume_fraction: 0.1388
 dispersion_parameter: 0.2 # s for a log normal distribution
+initial_mean_radius_2: 30.0e-9  #[m]
+initial_volume_fraction_2: 0.075
+dispersion_parameter_2: 0.2 # s for a log normal distribution
+
 
 
 
 #Composition
-c0_matrix: [  0.0903, 0.0]  #bulk composition in [Al+Ti, ] in atomic fraction - 
+c0_matrix: [  0.0903, 0.0]  #bulk composition in [Al+Ti, ] in atomic fraction -0.076 is the equilibrium concentration in the matrix at 1080°C - 0.0903 bulk composition in Rene65
 stoichiometry: [1, 0, 3] #stoichiometry of the precipitate  [Al, Ti, Ni]
 
 
@@ -30,7 +36,11 @@ gamma_coherent: 0.09 # coherent surface energy (J/m^2)
 #solute_migration_energy: [256.0e+3,256.0e+3] # activation energy for solute diffusion (Ti in Ni) Javad Sohrabi 2019
 solute_diffusion0: [2.94e-4, 2.94e-4] # prefactor diffusion coefficient Ti in Ni [m^2/s] these Anthony Seret
 solute_migration_energy: [269.0e+3,269.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
-c_eq: [ 0.0801,0] # equilibrium concentration in Al and Ti in the matrix at 1090°C
+#c_eq: [ 0.05488,0] # equilibrium concentration in Al and Ti in the matrix at 1020°C
+c_eq: [0.075, 0.0] #equilibrium value 1293 K 0.0548
+enthalpy: 62.259e+3 #J/mol 
+entropy: 22.6107 #J/mol/K
+
 
 #Vacancy model inputs
 
@@ -55,7 +65,11 @@ n: 6.68309
 
 
 ## KWN discretisation
-kwn_step0: 0.5e-8      # starting bin radius in linear scale (m)
-kwn_stepsize: 2.0e-8    # spacing between bins in linear scale  (m)
-kwn_nsteps: 250     # no. of radius bins
+kwn_step0: -8.5 # starting bin radius in linear scale (m)
+kwn_stepsize: 0.03  # spacing between bins in linear scale  (m)
+kwn_nsteps: 110    # no. of radius bins
 dt_max: 1.0 #maximum time increment  [s]
+
+
+#Minimal detectable size for precipitates - to compare experiments and calculations
+detectable_size: 2.0e-9

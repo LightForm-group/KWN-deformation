@@ -42,7 +42,9 @@ program KWN
 				vacancy_diffusion0, &   ! vacancy diffusivity in m^2/s
 				mean_radius_initial,&  ! average radius initial distribution in meters
 				standard_deviation,& ! standard deviation initial distribution (log normal law assumed)
-				volume_fraction_initial, &! initial total precipitate distribution
+				volume_fraction_initial, &! initial total precipitate distribution				
+				mean_radius_initial_2,&  ! average radius initial distribution in meters for the bimodal distribution - second population
+				volume_fraction_initial_2, &! initial total precipitate distribution for the bimodal distribution - second population
 				rho_0, & !initial dislocation density
 				rho_s, & !saturation dislocation density
 				strain_rate, & ! strain rate in /s
@@ -102,13 +104,15 @@ program KWN
 	integer :: 	en, &
 				bin, &
 				k, &
-				N_elements!number of different elements in the precipitate
+				N_elements, &!number of different elements in the precipitate
+				bin_detectable_radius
 
 	integer, dimension(:), allocatable :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
 
 	real(pReal), dimension(:,:), allocatable :: &
 		results, & !variable to store the results
-		normalized_distribution_function !normalised distribution for the precipitate size
+		normalized_distribution_function, & !normalised distribution for the precipitate size
+		normalized_distribution_function_2
 	real(pReal), dimension(:), allocatable :: &
 		growth_rate_array, &!array that contains the precipitate growth rate of each bin
 		x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
@@ -144,6 +148,7 @@ program KWN
 		c_j, & ! jog concentration - ref [1]
 		strain, & !macroscopic strain
 		shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
+		shape_parameter_2, & !shape parameter in the log normal distribution of the precipitates - bimodal distribution
 		radius_transition, & !transition radius between shearing and by-passing -ref [2]
 		mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
 		tau_kwn, &  !contribution of precipitates and solid solution hardening to the flow stress
@@ -152,7 +157,11 @@ program KWN
 		incubation, & ! incubation prefactor either 0 or 1
 		Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
 		n, & ! stress exponent in the sinepower law for flow stress
-		T_end ! in case of non-isothermal treatment, temperature at the end of the cooling process
+		T_end, & ! in case of non-isothermal treatment, temperature at the end of the cooling process
+		apparent_vf, & ! apparent volume fraction considering that the smallest precipitates cannot be detected - the limit for detectability is an input parameter
+		apparent_mean_radius, & ! apparent mean radius considering that the smallest precipitates cannot be seen - - the limit for detectability is an input parameter
+		apparent_number_density, & !  apparent number density considering that the smallest  - the limit for detectability is an input 
+		detectable_radius ! minimal radius that can be experimentally observed - used to calculate the apparent precipitate distribution
 	! the 'temp' variables are to store the previous step and adapt the time step at each iteration
 	real(pReal), dimension(:), allocatable ::   &
 		diffusion_coefficient, &  ! diffusion coefficient for Mg and Zn
@@ -183,9 +192,9 @@ program KWN
 		vol_int
 
 
-	character*120 :: filename !name of the gile where the outputs will be written
-	character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
-	character*100 :: testfolder !folder where the input file is
+	character*150 :: filename !name of the gile where the outputs will be written
+	character*150 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
+	character*150 :: testfolder !folder where the input file is
 
 	INTEGER :: status ! I/O status
 
@@ -236,6 +245,7 @@ program KWN
 	allocate(dot%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
 	allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
 	allocate( normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
+	allocate( normalized_distribution_function_2(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4] for second population in bimodal distribution
 	allocate(growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
 	allocate(x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
 	allocate(temp_x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal)
@@ -295,6 +305,10 @@ program KWN
 	READ(1,*) prm%enthalpy !formation entropy precipitates [J/mol]
 	READ(1,*) prm%cooling_rate !cooling rate [K/s]
 	READ(1,*) T_end !temperature end of cooling
+	READ(1,*) detectable_radius ! minimal detectable radius in nm - used to calculate the apparent mean radius and vf
+	READ(1,*) prm%mean_radius_initial_2 ![m]
+	READ(1,*) prm%volume_fraction_initial_2 ![]
+	READ(1,*) shape_parameter_2 ! the initial distribution is defined by mean radius, volume fraction and shape parameter of a log normal distribution - see e.g. ref [4]
 	CLOSE(1)
 
 
@@ -336,6 +350,11 @@ program KWN
 		endif
 	enddo kwnbins_init
 	!---------------------------------------------------------------------------------------------------------------------------------
+
+	! calculate which bin corresponds to the detectable radius
+	bin_detectable_radius=maxval(minloc(abs(detectable_radius-prm%bins)))
+
+
 
 	!initialize some outputs
 	growth_rate_array=0.0*growth_rate_array
@@ -393,11 +412,67 @@ program KWN
 		enddo
 		!number density * total volume of precipitates = volume fraction
 		N_0=dst%precipitate_volume_frac(en)/vol_int
-
 		! now the normalised distribution function is multiplied by the total number density to get the number density per bin size [m^{-4}]
 		stt%precipitate_density(:,en)=normalized_distribution_function(:,en)*N_0
-		dst%total_precipitate_density(en)=N_0
+				
 
+		dst%total_precipitate_density(en)=N_0
+		!bimodal distribution
+		
+		if (prm%volume_fraction_initial_2>0.0_pReal) then
+
+
+			distribution_function_2 : do i=1, prm%kwn_nSteps
+									!definition of a log normal distribution
+									radiusL=prm%bins(i-1)
+									radiusR=prm%bins(i)
+									radiusC=(radiusL+radiusR)/2
+										normalized_distribution_function_2(i,en)	=	1.0_pReal/sqrt(PI*2.0_pReal) &
+																					/shape_parameter_2/radiusC	&
+																					*exp(-1.0/2.0*(log(radiusC/prm%mean_radius_initial_2)+shape_parameter_2**2/2)**2/shape_parameter_2**2)
+									enddo distribution_function_2
+
+			
+
+
+			! calculate the integral of the distribution function
+			integral_dist_function=0.0_pReal
+			do bin=1,prm%kwn_nSteps
+				radiusL = prm%bins(bin-1)
+				radiusR = prm%bins(bin  )
+				integral_dist_function=integral_dist_function+(radiusR-radiusL)*normalized_distribution_function_2(bin,en)
+			enddo
+
+			print*, 'integral dist', integral_dist_function
+
+
+			! normalized_distribution is not normalised yet
+			normalized_distribution_function_2(:,en)=normalized_distribution_function_2(:,en)/integral_dist_function
+			! now it is normalised
+
+			!the normalized distribution function gives the shape of the distribution, it needs to be multiplied by the number density N0 such that the initial precipitate fraction is the one given as input
+			N_0=0.0_pReal
+			! calculate the volume integral of the normalised precipitate distribution
+			vol_int=0.0
+			do bin=1,prm%kwn_nSteps
+				radiusL = prm%bins(bin-1)
+				radiusR = prm%bins(bin  )
+				radiusC=(radiusL+radiusR)/2
+				vol_int=vol_int+ normalized_distribution_function_2(bin,en)*radiusC**3*(radiusR-RadiusL)*4.0/3.0*PI
+			enddo
+			!number density * total volume of precipitates = volume fraction
+			! now the normalised distribution function is multiplied by the total number density to get the number density per bin size [m^{-4}]
+
+			N_0=prm%volume_fraction_initial_2/vol_int
+			stt%precipitate_density(:,en)=stt%precipitate_density(:,en)+normalized_distribution_function_2(:,en)*N_0
+			dst%total_precipitate_density(en)=dst%total_precipitate_density(en)+N_0
+
+		endif
+
+		!
+
+
+		
 		stt%precipitate_density(1,en)=0
 
 		! to avoid some problems when writing the outputs
@@ -461,7 +536,8 @@ program KWN
 
 		do bin=1,prm%kwn_nSteps
 			if (sum(stt%precipitate_density(:,en))>0.0_pReal) then
-				write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)/sum(stt%precipitate_density(:,en))
+				!write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)/sum(stt%precipitate_density(:,en))
+				write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)
 			else
 				write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en)
 			endif
@@ -1010,11 +1086,49 @@ program KWN
 								
 	 				endif
 
-
 					!update matrix composition
-
-					 dst%c_matrix(:,en) = (prm%c0_matrix(:) - dst%precipitate_volume_frac(en)*prm%ceq_precipitate(:))&
+					 dst%c_matrix(:,en) = 	(prm%c0_matrix(:) - dst%precipitate_volume_frac(en)*prm%ceq_precipitate(:))&
 	 										/(1-dst%precipitate_volume_frac(en))
+
+					! calculate the apparent radius/vf/Number density considering that not all precipitates can be experimentally observed
+					apparent_vf = 0.0_pReal
+    				apparent_number_density = 0.0_pReal
+    				apparent_mean_radius= 0.0_pReal
+
+	 
+			
+				
+					kwnbins_apparent:	do bin=bin_detectable_radius,prm%kwn_nSteps ! arbitrary value for minimum bin to start with
+   									radiusL = prm%bins(bin-1)
+      								radiusR = prm%bins(bin  )
+
+    								!update precipitate density
+    								apparent_number_density = 		apparent_number_density &
+   								   									+ stt%precipitate_density(bin,en) &
+   								   									*(radiusR - radiusL)
+   									!update average radius
+    								apparent_mean_radius =			 apparent_mean_radius &
+                                     								+ stt%precipitate_density(bin,en) &
+                                     								* (radiusR**2.0_pReal - radiusL**2.0_pReal)/2.0_pReal ! at that stage in m/m^3
+   									!update volume fraction
+
+    								apparent_vf = 					apparent_vf &
+                                      								+ 1.0_pReal/6.0_pReal*PI &
+                                      								* (radiusR+ radiusL)**3.0_pReal &
+                                      								* (radiusR - radiusL) &
+                                      								* stt%precipitate_density(bin,en)
+
+
+								enddo kwnbins_apparent
+					! mean radius from m/m^3 to m
+      				if (dst%total_precipitate_density(en) > 0.0_pReal) then
+      							apparent_mean_radius = 		apparent_mean_radius &
+                                     						/ apparent_number_density 
+								
+	 				endif
+
+
+
 
 
 
@@ -1023,8 +1137,8 @@ program KWN
     				print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
    					print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
     				print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
-						print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
-						print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
+					print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
+					print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
 						
 
    					! Adapt time step so that the outputs do not vary to much between too time steps
@@ -1060,7 +1174,7 @@ program KWN
     				!set the time step so that a precipitate cannot grow from more than the space between two adjacent classes
 
     	    			!not necessary to adapt the time step to the growth rate if there is no precipitate
-    	    			if (dst%total_precipitate_density(en)>1.0_pReal) then
+    	    			if (dst%precipitate_volume_frac(en)>1.0e-5_pReal) then
 
     	    				dt=min(dt_max,(prm%bins(1)-prm%bins(0))/maxval(abs(growth_rate_array)))
     	    				print*,'dt growth rate', (prm%bins(1)-prm%bins(0))/maxval(abs(growth_rate_array))
@@ -1155,6 +1269,13 @@ program KWN
 		 							902 FORMAT(2F40.6)
 		 						close(1)
 							endif
+
+							filename='results/apparent_precipitates_'
+           					filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+		 						open(1, file = filename,  ACTION="write", position="append")
+		 							write(1, 903) stt%time(en), apparent_mean_radius*1e9, apparent_vf, apparent_number_density*1e-18
+		 							903 FORMAT(4F40.6)
+		 						close(1)
 
 
 	       					! next time for which the outputs should be written
@@ -1321,6 +1442,15 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 	* (c_matrix(1)    - x_eq_interface) &
 	/ (atomic_volume*na/molar_volume*ceq_precipitate(1) - x_eq_interface)
 	
+	if (minval(growth_rate_array)>=0) then !means the critical radius is smaller than the smallest precipitate so nucleation occurs in the smallest bin in the smallest bin
+		dot_precipitate_density(2) = dot_precipitate_density(2) &
+															+ nucleation_rate/(bins(3)- bins(2))
+															!print*, 'nucleating in first bin'
+															
+	endif
+
+
+
     kwnbins_growth: do bin = 1, N_Steps-1
 
     					! consider two classes and their interface (radius_c)
@@ -1333,7 +1463,7 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 	  					! classical growth rate equation
 	  					growth_rate = growth_rate_array(bin)
 						
-						!print*, 'bin', radiusC, 'growth rqte', growth_rate
+						!print*, 'bin', radiusC, 'growth rate', growth_rate
 						! if the growth rate is positive, precipitates grow (smaller class -> bigger class) and the flux is positive
       					if (growth_rate > 0.0_pReal) then
         					flux = precipitate_density(bin)*growth_rate
@@ -1367,8 +1497,11 @@ subroutine 	growth_precipitate(N_elements, N_steps, bins, interface_c, &
 							endif
 
 						endif
-					
+
+		
 					
 					enddo kwnbins_growth
+
+								
 
 end subroutine growth_precipitate

@@ -57,4 +57,8 @@ with open('input.dat', 'w') as f:
 		f.write( "%.4e \n" % parsed_yaml_file.get('enthalpy', 0))
 		f.write( "%.4e \n" % parsed_yaml_file.get('cooling_rate', 0))
 		f.write( "%.4e \n" % parsed_yaml_file.get('T_end', 293))
+		f.write( "%.4e \n" % parsed_yaml_file.get('detectable_size', 0))		
+		f.write( "%.4e \n" % parsed_yaml_file.get('initial_mean_radius_2', 0))
+		f.write( "%.4e \n" % parsed_yaml_file.get('initial_volume_fraction_2',0))
+		f.write( "%.4e \n" % parsed_yaml_file.get('dispersion_parameter_2',0.2))
 		
