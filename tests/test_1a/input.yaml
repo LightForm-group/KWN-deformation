@@ -1,0 +1,59 @@
+
+#Deformation conditions
+T: 423 # temperature in K
+strain_rate: 1.0e-4  #/s - set to zero for static precipitation
+incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
+time: 10 #total deformation time [s]
+output_time_step: 0.1 # the outputs will be generated for this time step
+
+
+#Initial distribution
+initial_mean_radius: 0.9e-9  #[m]
+initial_volume_fraction: 0.007
+dispersion_parameter: 0.2 # s for a log normal distribution
+
+
+
+#Composition
+c0_matrix: [  0.02889, 0.02406]  #bulk composition in [Mg, Zn] in atomic fraction - here A7075
+stoichiometry: [5, 7, 6] #stoichiometry of the precipitate  Mg, Zn, Al (here it comes from Thermocalc for eta' phase )
+
+
+
+#Kinetics model inputs
+lattice_parameter: 4.0695e-10 # lattice parameter of the product phase (m)-> this one needs to be changed
+atomic_volume: 1.66e-29 # atomic volume of matrix (m^3)
+molar_volume: 1.0e-5 # molar volume of precipitating phase (m^3/mol)
+misfit_energy: 0.0 # elastic misfit energy (J/m^3)  11.422e+6
+gamma_coherent: 0.265 # coherent surface energy (J/m^2)  - calibrated with Deschamps 2012 Acta Mat
+solute_diffusion0: [1.49e-5, 1.49e-5] # prefactor diffusion coefficient Mg, Zn [m^2/s]
+solute_migration_energy: [126.5e+3,126.5e+3] # activation energy for solute diffusion (here taken identical for Mg and Zn)
+c_eq: [1.22e-2,5.04e-4] # equilibrium concentration in Mg and Zn in the matrix
+
+#Vacancy model inputs
+
+vacancy_sink_spacing:  50.0e-6 # sink spacing, here grain size [m]
+vacancy_diffusion0: 1.0e-5 # prefactor diffusion coefficient for vacancies - set to zero if there is no deformation
+jog_formation_energy: 0.3 # eV
+activation_energy_pipe_diffusion: 108.3e+3 # [J/mol] -ref Legros et al. 2008
+vacancy_formation_energy: 0.52 # eV
+vacancy_migration_energy: 0.93 # eV
+dislocation_arrangement: 10 # empirical factor from 1 to 10 in Militzer model
+vacancy_generation: 0.035 # mechanical vacancy production constant in Militzer model -  - set to zero if there is no deformation
+initial_dislocation_density: 1.0e+14 # /m^2
+saturation_dislocation_density: 1.0e+14 #  /m^2
+burgers_vector:  2.9e-10  #[m]
+#sinepower law for stress - needs to be changed to match 7075
+sigma_r: 100.0e+6 # [MPa]
+A: 5.214e-6 #[/s]
+Q_stress: 60.0e+3 # [J/mol]
+n: 6.68309
+
+
+
+
+## KWN discretisation
+kwn_step0: -9.30          # starting bin radius in logscale (m)
+kwn_stepsize: 0.01          # spacing between bins in logscale (m)
+kwn_nsteps: 100             # no. of radius bins
+dt_max: 0.01 #maximum time increment  [s]
