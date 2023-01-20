@@ -9,3 +9,6 @@ copyright = "2022 UoM"
 name="KWNDeformation"
 source-dir="app"
 main="KWN_with_deformation.f90"
+
+[dev-dependencies]
+test-drive.git = "https://github.com/awvwgk/test-drive"

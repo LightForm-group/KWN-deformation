@@ -4,7 +4,7 @@ COMPILER=GNU
 
 if [ $COMPILER == 'GNU' ]; then
 export FPM_FC=gfortran
-export FPM_FFLAGS="-fbounds-check -ffree-line-length-0 -fimplicit-none"
+export FPM_FFLAGS="-fbounds-check -ffree-line-length-0 -fimplicit-none -DWITH_QP=1 -O3"
 elif [ $COMPILER == 'Intel' ]; then
 export FPM_FC=ifort
 export FPM_FFLAGS="-traceback -check all"
