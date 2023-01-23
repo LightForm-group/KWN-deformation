@@ -47,17 +47,18 @@ fpm install --prefix <prefix directory>
 
 ## Running the Model
 
-1. Fill or modify the "input.yaml" file with input corresponding to the model described in ref. [3].
-2. Put the "input.yaml" file in a folder (e.g. "test_folder_name")
-3. Run `./run_kwn.sh test_folder_name` in a terminal.  
-4. The outputs are written in textfiles and can be visualised using the attached Jupyter notebooks.  
+1. Create, or modify an existing, `namelist.input` file with input corresponding to the model described in ref. [3]. Information on the settings for the namelist is given in the `README_namelist.txt` help file.
+2. Create your simulation folder (given as `testfolder` in the namelist file), and create an `output` folder within that folder.
+3. Run `KWN-deform` in a terminal.  
+4. The outputs are written in textfiles within the output folder defined above, and example Jupyter notebooks containing code for visualising these are included in the `tests` folders.  
 
-Some examples of input files and jupyer notebooks can be found in the "test_n" directories, with n the number of the test: 
+Some examples of input files and jupyer notebooks can be found in the `tests` directory:
+- `tests/test_1`:
+ - with deformation in a ternary alloy (Al-Zn-Mg) containing an initial distribution
+- `tests/test_2`:
+ - without deformation in a binary alloy with no initial distribution, for a Cu-Co binary alloy (reproduces result of ref [7]). 
 
-- with deformation  in a ternary alloy (Al-Zn-Mg) containing an initial distribution
-  - test_1
-- without deformation in a binary alloy with no initial distribution
-  - for a Cu-Co binary alloy (reproduces result of ref [7]). 
+Short copies of these examples (`test_1a` and `test_2a`) can be run using the `run_basic_test.sh` script within the `tests` directory.
 
 ## Authors
 
