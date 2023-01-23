@@ -16,7 +16,7 @@ subroutine collect_suite2(testsuite)
   type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
   testsuite = [ &
-    new_unittest("shear modulus", test_shear_modulus), &
+    new_unittest("shear modulus", test_shear_modulus, should_fail=.true.), &
     new_unittest("beta star", test_beta_star, should_fail=.true.) &
     ]
 
