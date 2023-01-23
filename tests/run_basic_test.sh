@@ -2,7 +2,13 @@
 
 run_analysis ()
 {
-./run_kwn.sh ${scenario} 2>&1 > ${scenario}_log.txt 
+# prepare scenario
+rm -r ${scenario}/results
+mkdir ${scenario}/results
+cp ${scenario}/namelist.input .
+# run model
+~/bin/KWN-deform 2>&1 > ${scenario}_log.txt 
+# run checks on model outputs
 echo "checking output file checksums"
 cd ${scenario}/results || output="no result folder" && output=$(diff ../reference_result_checksums.txt <(md5 *))
 if [ -z "${output}" ];then
@@ -13,10 +19,10 @@ fi
 cd -
 }
 
-scenario="tests/test_1a"
+scenario="test_1a"
 run_analysis
 
-scenario="tests/test_2a"
+scenario="test_2a"
 run_analysis
 
 echo "tests finished"
