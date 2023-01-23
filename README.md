@@ -53,9 +53,9 @@ fpm install --prefix <prefix directory>
 4. The outputs are written in textfiles within the output folder defined above, and example Jupyter notebooks containing code for visualising these are included in the `tests` folders.  
 
 Some examples of input files and jupyer notebooks can be found in the `tests` directory:
- - `tests/test_1`:
+- `tests/test_1`:
   - with deformation in a ternary alloy (Al-Zn-Mg) containing an initial distribution
- - `tests/test_2`:
+- `tests/test_2`:
   - without deformation in a binary alloy with no initial distribution, for a Cu-Co binary alloy (reproduces result of ref [7]). 
 
 Short copies of these examples (`test_1a` and `test_2a`) can be run using the `run_basic_test.sh` script within the `tests` directory.
