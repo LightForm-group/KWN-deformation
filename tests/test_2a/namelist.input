@@ -1,5 +1,5 @@
 &config
-testfolder = 'tests/test_2a' 
+testfolder = 'test_2a' 
 kwn_step0 = 1.000e-10 
 kwn_stepsize = 1.000e-10 
 kwn_nsteps = 150 

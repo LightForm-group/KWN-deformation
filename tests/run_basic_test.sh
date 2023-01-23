@@ -19,10 +19,10 @@ fi
 cd -
 }
 
-scenario="test_1a"
+scenario="./test_1a"
 run_analysis
 
-scenario="test_2a"
+scenario="./test_2a"
 run_analysis
 
 echo "tests finished"
