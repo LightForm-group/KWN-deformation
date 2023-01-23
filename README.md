@@ -12,23 +12,53 @@ Compiler: gfortran or ifort
 
 Installer: [Fortran Package Manager](https://fpm.fortran-lang.org/en/index.html)
 
-## Installation
+## Building with fpm
 
-The FPM settings are defined in the file `fpm.toml`. An example bash install script is provided (`install.sh`); this defines the compiler, compiler flags, and prefix directory that the program will be installed under. The program will be installed in the `bin` directory under that location. The default compiler is gfortran, to use Intel change the `COMPILER` flag in `install.sh`. 
+The FPM settings are defined in the file `fpm.toml`. The instructions for building and testing KWN-deform are listed below.
+
+Tests are run using the [Test Drive](https://github.com/awvwgk/test-drive) package, as listed in the `[dev-dependencies]` section of the `fpm.toml` file. This requires the `-DWITH_QP=1` flag to be included in `FPM_FFLAGS`; if you are not running the tests this flag can be left out.
+
+### Building with gfortran
+
+Compilation with gfortran versions 6.4.0 to 11.3.0 has been tested, and the following options will create optimised binaries: 
+```
+export FPM_FC=gfortran
+export FPM_FFLAGS="-fbounds-check -ffree-line-length-0 -fimplicit-none -O3 -DWITH_QP=1"
+fpm build
+fpm test
+```
+
+### Building with intel
+
+Compilation with intel versions 17.0.7 to 19.1.2 have been tested, and the following options will create optimised binaries:
+```
+export FPM_FC=ifort
+export FPM_FFLAGS="-traceback -check all -O3 -DWITH_QP=1"
+fpm build
+fpm test
+```
+
+## Installing with fpm
+
+The model can be installed using the `fpm install` command. This will install the binary and libraries (in `bin` and `lib`/`include` respectively). For a standard user these will be installed with the root `~/.local/`, but to change this root you can use the `--prefix` flag:
+```
+fpm install --prefix <prefix directory>
+```
 
 ## Running the Model
 
-1. Fill or modify the "input.yaml" file with input corresponding to the model described in ref. [3].
-2. Put the "input.yaml" file in a folder (e.g. "test_folder_name")
-3. Run `./run_kwn.sh test_folder_name` in a terminal.  
-4. The outputs are written in textfiles and can be visualised using the attached Jupyter notebooks.  
+1. Create, or modify an existing, `namelist.input` file with input corresponding to the model described in ref. [3]. Information on the settings for the namelist is given in the `README_namelist.txt` help file.
+2. Create your simulation folder (given as `testfolder` in the namelist file), and create an `output` folder within that folder.
+3. Run `KWN-deform` in a terminal.  
+4. The outputs are written in textfiles within the output folder defined above, and example Jupyter notebooks containing code for visualising these are included in the `tests` folders.  
 
-Some examples of input files and jupyer notebooks can be found in the "test_n" directories, with n the number of the test: 
+Some examples of input files and jupyer notebooks can be found in the `tests` directory:
+- `tests/test_1`:
+  - with deformation in a ternary alloy (Al-Zn-Mg) containing an initial distribution
+- `tests/test_2`:
+  - without deformation in a binary alloy with no initial distribution, for a Cu-Co binary alloy (reproduces result of ref [7]). 
 
-- with deformation  in a ternary alloy (Al-Zn-Mg) containing an initial distribution
-  - test_1
-- without deformation in a binary alloy with no initial distribution
-  - for a Cu-Co binary alloy (reproduces result of ref [7]). 
+Short copies of these examples (`test_1a` and `test_2a`) can be run using the `run_basic_test.sh` script within the `tests` directory.
 
 ## Authors
 

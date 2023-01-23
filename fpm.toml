@@ -1,11 +1,19 @@
-name = "KWNDeformation"
+name = "KWN-Deform"
 version = "0.1.0"
 license = "MIT"
-author = "test author"
-maintainer = "example@place.com"
-copyright = "2022 UoM"
+author = "Madeleine Bignon, Pratheel Shanthraj, Samuel Engel"
+maintainer = ""
+copyright = "2023 University of Manchester"
 
 [[ executable ]]
-name="KWNDeformation"
+name="KWN-Deform"
 source-dir="app"
 main="KWN_with_deformation.f90"
+
+[[test]]
+name="unit-tests"
+source-dir="test"
+main="tester.f90"
+
+[test.dependencies]
+test-drive.git = "https://github.com/awvwgk/test-drive"
