@@ -98,7 +98,10 @@ subroutine run_model(prm, dot, stt, dst, &
         temp_c_matrix, &
         temp_x_eq_interface, &
         temp_x_eq_matrix, &
-        temp_precipitate_density ,&
+        temp_precipitate_density ,
+        
+        
+        &
         temp_dot_precipitate_density, &
         k1,k2,k3,k4 ! variables used for Runge Kutta integration
 
@@ -114,14 +117,14 @@ subroutine run_model(prm, dot, stt, dst, &
         Temperature_temp, &
         h !used for Runge Kutta integration
 
-    character*100 :: filename !name of the gile where the outputs will be written
+    character*100 :: filename !name of the file where the outputs will be written
 
     INTEGER :: status ! I/O status
 
 
 
     ! allocate arrays for Runga Kutta and temporary work
-    allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge Kutta
+    allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge-Kutta
     allocate(k2(prm%kwn_nSteps), source=0.0_pReal) !
     allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
     allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
