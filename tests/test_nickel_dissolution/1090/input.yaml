@@ -3,7 +3,7 @@
 T: 1363 # temperature in K
 strain_rate: 0.0  #/s - set to zero for static precipitation
 incubation: 0.0 # 1 or 0, set to 0 for no precipitate incubation time
-time: 10000.0 #total deformation time [s]
+time: 15000.0 #total deformation time [s]
 output_time_step: 0.1 # the outputs will be generated for this time step
 
 
@@ -30,8 +30,8 @@ gamma_coherent: 0.09 # coherent surface energy (J/m^2)  0.09 -- test with 0.05
 #solute_migration_energy: [256.0e+3,256.0e+3] # activation energy for solute diffusion (Ti in Ni) Javad Sohrabi 2019
 #test Madeleine
 #test madeleine
-solute_diffusion0: [2.94e-4, 2.94e-4]  # prefactor diffusion coefficient Ti in Ni [m^2/s] 
-solute_migration_energy: [285.0e+3,285.0e+3] # activation energy for solute diffusion (T
+solute_diffusion0: [5.0e-5, 5.0e-5]  # prefactor diffusion coefficient Ti in Ni [m^2/s] 
+solute_migration_energy: [270.0e+3,270.0e+3] # activation energy for solute diffusion (T
 #solute_diffusion0: [2.94e-4, 2.94e-4] # prefactor diffusion coefficient Ti in Ni [m^2/s] these Anthony Seret
 #solute_migration_energy: [269.0e+3,269.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
 c_eq: [ 0.0801,0] # equilibrium concentration in Al and Ti in the matrix at 1090°C

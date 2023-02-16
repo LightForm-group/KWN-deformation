@@ -34,8 +34,9 @@ misfit_energy: 0.0 # elastic misfit energy (J/m^3)  11.422e+6
 gamma_coherent: 0.09 # coherent surface energy (J/m^2)  
 #solute_diffusion0: [4.3e-6, 4.3e-6] # prefactor diffusion coefficient Ti in Ni [m^2/s] Javad Sohrabi 2019 4.3e-6 - test with twice this value
 #solute_migration_energy: [256.0e+3,256.0e+3] # activation energy for solute diffusion (Ti in Ni) Javad Sohrabi 2019
-solute_diffusion0: [2.94e-4, 2.94e-4] # prefactor diffusion coefficient Ti in Ni [m^2/s] these Anthony Seret
-solute_migration_energy: [269.0e+3,269.0e+3] # activation energy for solute diffusion (Ti in Ni) these Anthony Seret
+#fitted Madeleine 
+solute_diffusion0: [5.0e-5, 5.0e-5]  # prefactor diffusion coefficient Ti in Ni [m^2/s] 
+solute_migration_energy: [270.0e+3,270.0e+3] # activation energy for solute diffusion (T
 #c_eq: [ 0.05488,0] # equilibrium concentration in Al and Ti in the matrix at 1020°C
 c_eq: [0.075, 0.0] #equilibrium value 1293 K 0.0548
 enthalpy: 62.259e+3 #J/mol 
@@ -72,4 +73,4 @@ dt_max: 1.0 #maximum time increment  [s]
 
 
 #Minimal detectable size for precipitates - to compare experiments and calculations
-detectable_size: 2.0e-9
+detectable_size: 40.0e-9

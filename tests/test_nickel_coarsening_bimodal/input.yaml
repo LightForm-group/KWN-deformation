@@ -11,10 +11,10 @@ output_time_step: 20 # the outputs will be generated for this time step
 
 #Initial distribution
 initial_mean_radius: 1.5e-6  #[m]
-initial_volume_fraction: 0.1388
+initial_volume_fraction: 0.1188
 dispersion_parameter: 0.2 # s for a log normal distribution
-initial_mean_radius_2: 30.0e-9  #[m]
-initial_volume_fraction_2: 0.075
+initial_mean_radius_2: 20.0e-9  #[m]
+initial_volume_fraction_2: 0.02
 dispersion_parameter_2: 0.2 # s for a log normal distribution
 
 
@@ -67,7 +67,7 @@ n: 6.68309
 ## KWN discretisation
 kwn_step0: -8.5 # starting bin radius in linear scale (m)
 kwn_stepsize: 0.03  # spacing between bins in linear scale  (m)
-kwn_nsteps: 110    # no. of radius bins
+kwn_nsteps: 100    # no. of radius bins
 dt_max: 1.0 #maximum time increment  [s]
 
 
