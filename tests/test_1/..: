@@ -36,4 +36,5 @@ A = 5.2140e-06
 Q_stress = 6.0000e+04 
 n = 6.6831e+00 
 ceq_matrix = 1.2200e-02, 5.0400e-04 
+incubation = 0.0000e+00 
 /
