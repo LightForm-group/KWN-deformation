@@ -77,6 +77,11 @@ subroutine read_configuration( &
 			migration_energy        !  solute migration energy in J/at
 
     
+
+
+
+
+
     ! define namelist for reading model configuration
     namelist /config/ kwn_nSteps, kwn_stepsize, kwn_step0, lattice_param, atomic_volume, &
                       molar_volume, misfit_energy, gamma_coherent, vacancy_generation, &
@@ -88,6 +93,11 @@ subroutine read_configuration( &
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
                       incubation
+
+    ! set default values for parameters in case the user does not define them
+    incubation=0
+
+
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
@@ -104,7 +114,9 @@ subroutine read_configuration( &
     print*, status
     read(1, config )
     CLOSE(1)
-    
+
+   
+
     prm%kwn_nSteps = kwn_nSteps
     prm%kwn_stepsize = kwn_stepsize
     prm%kwn_step0 = kwn_step0

@@ -84,6 +84,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     time_record_step = 0.5
 
+
     ! --------------------------
     ! allocating variables needed for reading configuration file
     allocate(prm%migration_energy(N_elements), source=0.0_pReal)
@@ -92,6 +93,11 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(prm%ceq_matrix(N_elements), source=0.0_pReal)
     allocate(prm%ceq_precipitate(N_elements), source=0.0_pReal)
     allocate(stoechiometry(N_elements+1))
+   
+    ! add some default values for the parameters:
+    incubation=0
+
+
 
 
     !!! read the configuration file, using data arrays allocated above
@@ -111,6 +117,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                             stoechiometry, &
                             N_elements & 
                             )
+
+    
     
     !-------- add a backslash to the folder path
     testfolder = trim(testfolder)//'/'

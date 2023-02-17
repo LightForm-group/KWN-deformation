@@ -3,7 +3,8 @@ module KWN_model
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate, &
-                                  update_precipate_properties, set_initial_timestep_constants
+                                  update_precipate_properties, set_initial_timestep_constants, &
+                                  calculate_equilibrium
     use KWN_model_functions, only: calculate_binary_alloy_critical_radius, &
                                    calculate_beta_star, calculate_nucleation_rate
     use KWN_io, only: output_results
