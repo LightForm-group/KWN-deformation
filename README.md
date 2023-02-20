@@ -63,6 +63,18 @@ Short copies of these examples (`test_1a` and `test_2a`) can be run using the `r
 
 Note : a bash script has been added to run the model more easily. It is located in the `tests` folder. To use it, you just need to go to the `tests` folder and then run `./run_kwn.sh testfolder` in a terminal (where `testfolder` contains a `results` directory and the `namelist.input` file as stated above.)
 
+## Modifying the Model
+
+The model can be modified or features can be added by modifying the files in the `src` directory. Once the changes are made, the program should be recompiled by running the following commands in a command line:
+```
+conda activate fpm
+fpm clean
+fpm build
+fpm install
+```
+
+
+
 ## Authors
 
 Madeleine Bignon, University of Manchester  
