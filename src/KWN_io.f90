@@ -67,8 +67,9 @@ subroutine read_configuration( &
 			dislocation_arrangement, & ! constant related to the dislocation density in the vacancy annihilation term, cf [1]
 			burgers, & !matrice burgers vector
 			jog_formation_energy, & ! formation energy for jogs
-			q_dislocation ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-
+			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
+            enthalpy, & ! enthalpy of precipitation
+            entropy  ! entropy of precipitation
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
 			c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -77,7 +78,6 @@ subroutine read_configuration( &
 			migration_energy        !  solute migration energy in J/at
 
     
-
 
 
 
@@ -92,10 +92,17 @@ subroutine read_configuration( &
                       diffusion0, migration_energy, & 
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
-                      incubation
+                      incubation, enthalpy, entropy
+
 
     ! set default values for parameters in case the user does not define them
     incubation=0
+
+    ! the following have been set for aluminium
+    sigma_r = 1.0000e+08 
+    A = 5.2140e-06 
+    Q_stress = 6.0000e+04 
+    n = 6.6831e+00 
 
 
 
@@ -106,12 +113,12 @@ subroutine read_configuration( &
     allocate(ceq_matrix(N_elements), source=0.0_pReal)
 
 
-
+    print*, 'Reading input file...'
 
     ! Read the inputs from the input.namelist file
     !!!!!!!!!!!
     OPEN (UNIT=1, FILE='namelist.input', STATUS='OLD', ACTION='READ', IOSTAT=status)
-    print*, status
+    print*,'' 
     read(1, config )
     CLOSE(1)
 
@@ -143,12 +150,17 @@ subroutine read_configuration( &
     prm%ceq_matrix = ceq_matrix
     prm%diffusion0 = diffusion0
     prm%migration_energy = migration_energy
+    ! prm%enthalpy = enthalpy 
+   !  prm%entropy = entropy
 
+    print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
-    open (unit=1, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
-    print*, status
-    write(1, config)
-    close(1)
+     open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
+     print*, ''
+     write(2, config)
+     close(2)
+    print*, 'Output file written'
+    write (*, config)
     
 end subroutine read_configuration
 
@@ -182,6 +194,7 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
     character*100 :: filename !name of the gile where the outputs will be written
     integer :: bin, i
 
+    
     allocate(results(1,8)) ! the results are stored in this array
 
     ! write outputs in textfiles

@@ -2,7 +2,7 @@ module KWN_initialise
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_routines, only: interface_composition, growth_precipitate
+    use KWN_model_routines, only: interface_composition, growth_precipitate !, equilibrium_flat_interface
     use KWN_model_functions, only: calculate_binary_alloy_critical_radius
     use KWN_io, only: read_configuration, output_results
 
@@ -94,8 +94,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(prm%ceq_precipitate(N_elements), source=0.0_pReal)
     allocate(stoechiometry(N_elements+1))
    
-    ! add some default values for the parameters:
-    incubation=0
+
 
 
 
@@ -154,7 +153,21 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     prm%standard_deviation = 0.0 ! set to zero for initialisation
     
+
+
+
+
     prm%ceq_precipitate = real(stoechiometry(1:2)) / real(sum(stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
+
+
+
+    ! if the enthalpy and entropy are provided, then the equilibrium concentration should be calculated, otherwise take the input value for equilibrium concentration
+    !if (prm%entropy>0.0_pReal) then
+	!	call 			equilibrium_flat_interface(Temperature,  N_elements,  stoechiometry, &
+	!											   prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+	!											   diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+	!endif
+
 
     ! initial value for the time step
     dt = 0.001
@@ -203,7 +216,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                                                                        + shape_parameter**2 / 2 )**2 / shape_parameter**2 )
                                 enddo distribution_function
 
-        print*, normalized_distribution_function
+        !print*, normalized_distribution_function
 
 
         ! calculate the integral of the distribution function
@@ -214,7 +227,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
             integral_dist_function = integral_dist_function + (radiusR - radiusL) * normalized_distribution_function(bin,en)
         enddo
 
-        print*, 'integral dist', integral_dist_function
+        !print*, 'integral dist', integral_dist_function
 
 
         ! normalized_distribution is not normalised yet
@@ -323,7 +336,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
 
     !the critical radius for dissolution if calculated from the precipitate growth rate array - display it
-    print*, 'radius crit:', radius_crit*1.0e9, ' nm'
+   print*, ''
+   print*, 'radius crit:', radius_crit*1.0e9, ' nm'
 
 
     c_thermal_vacancy = 1.0
@@ -338,15 +352,20 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'Equilibrium composition, precipitate :', prm%ceq_precipitate
     print*, 'Equilibrium composition matrix :', prm%ceq_matrix
 
+    print*, 'Initialising outputs'
+    
+
     call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
                                shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
                                mean_particle_strength, Q_stress, &
                                time_record_step, total_time, x_eq_interface, en)
+    
+    print*, 'Writing outputs'
 
     call output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
                         nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
                         radius_crit, en)
-
+    print*, 'End initialisation'
 
 end subroutine initialise_model_state
 
@@ -355,6 +374,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
                                shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
                                mean_particle_strength, Q_stress, &
                                time_record_step, total_time, x_eq_interface, en)
+    implicit none
 
     type(tParameters), intent(in) :: prm
     type(tKwnpowerlawState), intent(in) :: stt
@@ -382,18 +402,24 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
     integer, intent(in) :: en
 
     ! local variables
-    character*100 :: filename !name of the gile where the outputs will be written
-    integer :: bin, i
+    character*200 :: filename !name of the gile where the outputs will be written
+    integer :: bin, i, status
 
-
+    print*, 'file_suffix : ', filesuffix
 
     !Write the initial precipitate distribution in a textfile
     filename = 'results/initial_precipitation_distribution_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
-    open(1, file = filename,  ACTION="write", STATUS="replace")
+    print*, 'File name:', filename 
+    print*, 'Creating initial distribution output file... '
+  
+    open(unit=1, file = filename,  STATUS='OLD', ACTION='WRITE', IOSTAT=status)
+ 
+        print*, 'File opened'
         write(1,*) ' # Bin [m], Precipitate density distribution [/m^4]'
 
         do bin = 1, prm%kwn_nSteps
+            print*, 'bin : ', bin
             if (sum(stt%precipitate_density(:,en)) > 0.0_pReal) then
                 write(1, 901) prm%bins(bin), stt%precipitate_density(bin,en) / sum(stt%precipitate_density(:,en))
             else
@@ -401,7 +427,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
             endif
         enddo
     close(1)
-
+    print*, 'Creating temperature file... '
     ! record the temperature (for versions where there would be a temperature ramp for example)
     filename = 'results/temperature_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)

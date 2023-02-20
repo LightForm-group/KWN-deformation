@@ -138,7 +138,62 @@ subroutine update_precipate_properties(prm, dst, stt, en)
 
 end subroutine update_precipate_properties
 
+subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
+									 c_matrix,x_eq, atomic_volume, na, molar_volume, ceq_precipitate, &
+									 diffusion_coefficient, volume_fraction, enthalpy, entropy)
 
+	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
+	implicit none
+	integer, parameter :: pReal = selected_real_kind(25)
+	integer, intent(in) :: N_elements
+	integer, intent(in), dimension(N_elements+1) :: stoechiometry
+	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient
+	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume,  enthalpy, entropy, volume_fraction
+	real(pReal), intent(inout), dimension(N_elements+1) :: x_eq
+	real(pReal) :: xmin, xmax, solubility_product, delta
+	integer :: i
+
+	xmin=0.0_pReal
+	xmax=1.0_pReal
+
+  
+
+
+   								solubility_product=exp(entropy/8.314-enthalpy/8.314/T)
+
+
+								xmin=0.0! 
+								xmax=atomic_volume*na/molar_volume*ceq_precipitate(1) ! the equilibrium concentration at the interface cannot be higher than the concentration in the precipitate
+
+								do while (abs(xmin-xmax)/xmax >0.0001.AND.xmax>1.0e-8)
+
+
+									x_eq(1)=(xmin+xmax)/2.0
+
+									!  find the intersection between stoichiometric line and solubility line by dichotomy
+									! delta=0 ==> intersection between stoichiometry and solubility line
+									delta = x_eq(1)**stoechiometry(1)*&
+											((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
+											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)*(1-x_eq(1)-((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
+											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction)))**stoechiometry(3)&
+											-solubility_product
+
+									if (delta<0.0_pReal) then
+										xmin=x_eq(1)
+									else
+										xmax=x_eq(1)
+									endif
+
+								enddo
+
+								! stoichiometry line to find x_eq
+								x_eq(2)=c_matrix(2)-real(stoechiometry(2))/real(stoechiometry(1))*(c_matrix(1)-x_eq(1))
+								
+
+
+
+return
+end subroutine
 
 subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometry, &
                                 c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
