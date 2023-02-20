@@ -67,7 +67,7 @@ subroutine read_configuration( &
 			dislocation_arrangement, & ! constant related to the dislocation density in the vacancy annihilation term, cf [1]
 			burgers, & !matrice burgers vector
 			jog_formation_energy, & ! formation energy for jogs
-			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
+			q_dislocation , & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
             enthalpy, &
             entropy
 
@@ -89,7 +89,8 @@ subroutine read_configuration( &
                       diffusion0, migration_energy, & 
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
-                      incubation, enthalpy, entropy
+                      incubation
+    namelist /newvar/ enthalpy, entropy
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
@@ -105,6 +106,7 @@ subroutine read_configuration( &
     OPEN (UNIT=1, FILE='namelist.input', STATUS='OLD', ACTION='READ', IOSTAT=status)
     print*, status
     read(1, config )
+    read(1, newvar )
     CLOSE(1)
     
     prm%kwn_nSteps = kwn_nSteps
@@ -138,6 +140,7 @@ subroutine read_configuration( &
     open (unit=1, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
     print*, status
     write(1, config)
+    write(1, newvar)
     close(1)
     
 end subroutine read_configuration
