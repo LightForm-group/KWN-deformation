@@ -65,7 +65,7 @@ Note : a bash script has been added to run the model more easily. It is located 
 
 ## Modifying the Model
 
-The model can be modified or features can be added by modifying the files in the `src` directory. Once the changes are made, the program should be recompiled by running the following commands in a command line:
+The model can be modified or features can be added by modifying the files in the `src` directory. Once the changes have been made, the program should be recompiled by running the following commands in a command line:
 ```
 conda activate fpm
 fpm clean
