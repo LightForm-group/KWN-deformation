@@ -96,6 +96,7 @@ subroutine read_configuration( &
 
 
     ! set default values for parameters in case the user does not define them
+    ! set to 1 to consider incubation time
     incubation=0
     enthalpy=0.0_pReal ! if enthalpy and entropy are not given, they are set to 0 and ignored
     entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
@@ -105,6 +106,30 @@ subroutine read_configuration( &
     A = 5.2140e-06 
     Q_stress = 6.0000e+04 
     n = 6.6831e+00 
+    ! no deformation parameters given -> no deformation 
+    strain_rate=0.0_pReal
+! ! if nothing about vacancies is specified, ignore them
+
+    vacancy_generation=0.0_pReal
+    ! random values for this to allow user not to specify them in case no deformation is needed
+    vacancy_energy = 5.200e-01 
+    vacancy_migration_energy= 9.300e-01 
+    vacancy_diffusion0 = 1.000e-05 
+    jog_formation_energy = 3.000e-01 
+    vacancy_sink_spacing = 5.000e-05 
+    dislocation_arrangement = 1.000e+01 
+    rho_0 = 1.000e+14 
+    rho_s = 1.000e+14 
+    ! activation energy for pipe diffusion - not considered so far but might be useful in the future
+    q_dislocation = 1.083e+05 
+
+    ! if noting is said about the initial precipitation state, consider there are no precipitates
+    volume_fraction_initial=0.0_pReal
+    mean_radius_initial=0.0_pReal
+    shape_parameter = 2.0000e-01 
+    ! no elastic strain energy specified ==> considered as negligible
+    misfit_energy=0.0_pReal
+
 
 
 
