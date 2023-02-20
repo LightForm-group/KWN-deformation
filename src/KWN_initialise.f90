@@ -2,7 +2,7 @@ module KWN_initialise
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_routines, only: interface_composition, growth_precipitate !, equilibrium_flat_interface
+    use KWN_model_routines, only: interface_composition, growth_precipitate , equilibrium_flat_interface
     use KWN_model_functions, only: calculate_binary_alloy_critical_radius
     use KWN_io, only: read_configuration, output_results
 
@@ -159,14 +159,17 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     prm%ceq_precipitate = real(stoechiometry(1:2)) / real(sum(stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
 
+      !calculate initial diffusion coefficient
+    diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+                            !   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)  ! include pipe diffusion
 
 
     ! if the enthalpy and entropy are provided, then the equilibrium concentration should be calculated, otherwise take the input value for equilibrium concentration
-    !if (prm%entropy>0.0_pReal) then
-	!	call 			equilibrium_flat_interface(Temperature,  N_elements,  stoechiometry, &
-	!											   prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-	!											   diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
-	!endif
+    if (prm%entropy>0.0_pReal) then
+		call 			equilibrium_flat_interface(Temperature,  N_elements,  stoechiometry, &
+												   prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+												   diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+	endif
 
 
     ! initial value for the time step
@@ -309,10 +312,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     dst%c_matrix(:,en) = ( prm%c0_matrix(:) - dst%precipitate_volume_frac(en) * prm%ceq_precipitate(:) ) &
                             / ( 1.0 - dst%precipitate_volume_frac(en) )
 
-    !calculate initial diffusion coefficient
-    diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-                            !   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)  ! include pipe diffusion
-
+  
 
 
 

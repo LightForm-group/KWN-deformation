@@ -30,9 +30,9 @@ module KWN_data_types
                 burgers, & !matrice burgers vector
                 jog_formation_energy, & ! formation energy for jogs
                 q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-                solute_strength!, & ! constant related to the solid solution hardening- cf [2]
-                !enthalpy, & ! enthalpy of precipitation 
-                !entropy ! entropy of precipitation
+                solute_strength, & ! constant related to the solid solution hardening- cf [2]
+                enthalpy, & ! enthalpy of precipitation 
+                entropy ! entropy of precipitation
 
         ! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
         real(pReal), dimension(:), allocatable :: &

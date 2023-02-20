@@ -29,6 +29,9 @@ gamma_coherent = 0.265                  ! [J/m^2] coherent surface energy - cali
 diffusion0 = 1.4900e-05, 1.4900e-05     ! prefactor diffusion coefficient Mg, Zn [m^2/s]
 migration_energy = 1.2650e+05, 1.2650e+05 ! activation energy for solute diffusion (here taken identical for Mg and Zn)
 ceq_matrix = 1.2200e-02, 5.0400e-04     ! equilibrium concentration in Mg and Zn in the matrix
+!!! alternatively, ceq_matrix can be omitted and replaced by value for enthalpy and entropy of precipitation - in that case ce_matrix will be recalculated
+ enthalpy = 290e+03 
+ entropy = 62.0e+00
 
 ! Vacancy model inputs
 vacancy_sink_spacing = 5.000e-05        ! sink spacing, here grain size [m]

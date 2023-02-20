@@ -97,6 +97,8 @@ subroutine read_configuration( &
 
     ! set default values for parameters in case the user does not define them
     incubation=0
+    enthalpy=0.0_pReal ! if enthalpy and entropy are not given, they are set to 0 and ignored
+    entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
 
     ! the following have been set for aluminium
     sigma_r = 1.0000e+08 
@@ -150,17 +152,17 @@ subroutine read_configuration( &
     prm%ceq_matrix = ceq_matrix
     prm%diffusion0 = diffusion0
     prm%migration_energy = migration_energy
-    ! prm%enthalpy = enthalpy 
-   !  prm%entropy = entropy
+    prm%enthalpy = enthalpy 
+    prm%entropy = entropy
 
-    print*, 'Writing output parameter file...'
+    !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
-     open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
-     print*, ''
-     write(2, config)
-     close(2)
-    print*, 'Output file written'
-    write (*, config)
+     !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
+     !print*, ''
+     !write(2, config)
+     !close(2)
+    !print*, 'Output file written'
+    !write (*, config)
     
 end subroutine read_configuration
 
