@@ -413,7 +413,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
     print*, 'File name:', filename 
     print*, 'Creating initial distribution output file... '
   
-    open(unit=1, file = filename,  STATUS='OLD', ACTION='WRITE', IOSTAT=status)
+    open(unit=1, file = filename,  STATUS='replace', ACTION='WRITE', IOSTAT=status)
  
         print*, 'File opened'
         write(1,*) ' # Bin [m], Precipitate density distribution [/m^4]'

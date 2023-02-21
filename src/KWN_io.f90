@@ -97,7 +97,7 @@ subroutine read_configuration( &
 
     ! set default values for parameters in case the user does not define them
     ! set to 1 to consider incubation time
-    incubation=0
+    incubation=0.0_pReal
     enthalpy=0.0_pReal ! if enthalpy and entropy are not given, they are set to 0 and ignored
     entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
 
@@ -112,8 +112,8 @@ subroutine read_configuration( &
 
     vacancy_generation=0.0_pReal
     ! random values for this to allow user not to specify them in case no deformation is needed
-    vacancy_energy = 5.200e-01 
-    vacancy_migration_energy= 9.300e-01 
+    vacancy_energy = 1.0_pReal ! arbitrarily high 
+    vacancy_migration_energy=1.0_pReal ! arbitrarily high
     vacancy_diffusion0 = 1.000e-05 
     jog_formation_energy = 3.000e-01 
     vacancy_sink_spacing = 5.000e-05 
