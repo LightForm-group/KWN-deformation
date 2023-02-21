@@ -48,9 +48,10 @@ fpm install --prefix <prefix directory>
 ## Running the Model
 
 1. Create, or modify an existing, `namelist.input` file with input corresponding to the model described in ref. [3]. Information on the settings for the namelist is given in the `README_namelist.txt` help file.
-2. Create your simulation folder (given as `testfolder` in the namelist file), and create an `output` folder within that folder.
+2. Create your simulation folder (given as `testfolder` in the namelist file), and create a `results` folder within that folder.
 3. Run `KWN-deform` in a terminal.  
 4. The outputs are written in textfiles within the output folder defined above, and example Jupyter notebooks containing code for visualising these are included in the `tests` folders.  
+
 
 Some examples of input files and jupyer notebooks can be found in the `tests` directory:
 - `tests/test_1`:
@@ -59,6 +60,20 @@ Some examples of input files and jupyer notebooks can be found in the `tests` di
   - without deformation in a binary alloy with no initial distribution, for a Cu-Co binary alloy (reproduces result of ref [7]). 
 
 Short copies of these examples (`test_1a` and `test_2a`) can be run using the `run_basic_test.sh` script within the `tests` directory.
+
+Note : a bash script has been added to run the model more easily. It is located in the `tests` folder. To use it, you just need to go to the `tests` folder and then run `./run_kwn.sh testfolder` in a terminal (where `testfolder` contains a `results` directory and the `namelist.input` file as stated above.)
+
+## Modifying the Model
+
+The model can be modified or features can be added by modifying the files in the `src` directory. Once the changes have been made, the program should be recompiled by running the following commands in a command line:
+```
+conda activate fpm
+fpm clean
+fpm build
+fpm install
+```
+
+
 
 ## Authors
 
