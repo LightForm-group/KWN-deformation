@@ -346,9 +346,12 @@ subroutine run_model(prm, dot, stt, dst, &
         ! print*, ''
         print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
         print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
-        print*, 'Solute concentration in the matrix' , dst%c_matrix(1,en)
+        print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
+        print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
+        print*, 'vf eq', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
         print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
         print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
+        
             
 
         ! Adapt time step so that the outputs do not vary to much between too time steps

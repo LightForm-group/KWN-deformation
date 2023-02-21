@@ -9,4 +9,4 @@ LOC_KWN=which 'KWN-Deform'
 cp $SOURCE_PATH $DEST_PATH
 #execute KWN code
 $LOC_KWN
-rm namelist.input 
+#rm namelist.input 

@@ -68,8 +68,13 @@ subroutine read_configuration( &
 			burgers, & !matrice burgers vector
 			jog_formation_energy, & ! formation energy for jogs
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
+<<<<<<< HEAD
+            enthalpy, & ! enthalpy of precipitation
+            entropy  ! entropy of precipitation
+=======
             enthalpy, & 
             entropy
+>>>>>>> 329b180c794a588c3da2dfea5da4c7ecf435e09f
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
 			c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -78,6 +83,10 @@ subroutine read_configuration( &
 			migration_energy        !  solute migration energy in J/at
 
     
+
+
+
+
     ! define namelist for reading model configuration
     namelist /config/ kwn_nSteps, kwn_stepsize, kwn_step0, lattice_param, atomic_volume, &
                       molar_volume, misfit_energy, gamma_coherent, vacancy_generation, &
@@ -89,6 +98,48 @@ subroutine read_configuration( &
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
                       incubation, enthalpy, entropy
+<<<<<<< HEAD
+
+
+    ! set default values for parameters in case the user does not define them
+    ! set to 1 to consider incubation time
+    incubation=0.0_pReal
+    enthalpy=0.0_pReal ! if enthalpy and entropy are not given, they are set to 0 and ignored
+    entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
+
+    ! the following have been set for aluminium
+    sigma_r = 1.0000e+08 
+    A = 5.2140e-06 
+    Q_stress = 6.0000e+04 
+    n = 6.6831e+00 
+    ! no deformation parameters given -> no deformation 
+    strain_rate=0.0_pReal
+! ! if nothing about vacancies is specified, ignore them
+
+    vacancy_generation=0.0_pReal
+    ! random values for this to allow user not to specify them in case no deformation is needed
+    vacancy_energy = 1.0_pReal ! arbitrarily high 
+    vacancy_migration_energy=1.0_pReal ! arbitrarily high
+    vacancy_diffusion0 = 1.000e-05 
+    jog_formation_energy = 3.000e-01 
+    vacancy_sink_spacing = 5.000e-05 
+    dislocation_arrangement = 1.000e+01 
+    rho_0 = 1.000e+14 
+    rho_s = 1.000e+14 
+    ! activation energy for pipe diffusion - not considered so far but might be useful in the future
+    q_dislocation = 1.083e+05 
+
+    ! if noting is said about the initial precipitation state, consider there are no precipitates
+    volume_fraction_initial=0.0_pReal
+    mean_radius_initial=0.0_pReal
+    shape_parameter = 2.0000e-01 
+    ! no elastic strain energy specified ==> considered as negligible
+    misfit_energy=0.0_pReal
+
+
+
+=======
+>>>>>>> 329b180c794a588c3da2dfea5da4c7ecf435e09f
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
@@ -97,15 +148,17 @@ subroutine read_configuration( &
     allocate(ceq_matrix(N_elements), source=0.0_pReal)
 
 
-
+    print*, 'Reading input file...'
 
     ! Read the inputs from the input.namelist file
     !!!!!!!!!!!
     OPEN (UNIT=1, FILE='namelist.input', STATUS='OLD', ACTION='READ', IOSTAT=status)
-    print*, status
+    print*,'' 
     read(1, config )
     CLOSE(1)
-    
+
+   
+
     prm%kwn_nSteps = kwn_nSteps
     prm%kwn_stepsize = kwn_stepsize
     prm%kwn_step0 = kwn_step0
@@ -132,12 +185,17 @@ subroutine read_configuration( &
     prm%ceq_matrix = ceq_matrix
     prm%diffusion0 = diffusion0
     prm%migration_energy = migration_energy
+    prm%enthalpy = enthalpy 
+    prm%entropy = entropy
 
+    !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
-    open (unit=1, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
-    print*, status
-    write(1, config)
-    close(1)
+     !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
+     !print*, ''
+     !write(2, config)
+     !close(2)
+    !print*, 'Output file written'
+    !write (*, config)
     
 end subroutine read_configuration
 
@@ -171,6 +229,7 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
     character*100 :: filename !name of the gile where the outputs will be written
     integer :: bin, i
 
+    
     allocate(results(1,8)) ! the results are stored in this array
 
     ! write outputs in textfiles
