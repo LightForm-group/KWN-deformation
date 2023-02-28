@@ -68,13 +68,12 @@ subroutine read_configuration( &
 			burgers, & !matrice burgers vector
 			jog_formation_energy, & ! formation energy for jogs
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-<<<<<<< HEAD
             enthalpy, & ! enthalpy of precipitation
-            entropy  ! entropy of precipitation
-=======
-            enthalpy, & 
-            entropy
->>>>>>> 329b180c794a588c3da2dfea5da4c7ecf435e09f
+            entropy, &  ! entropy of precipitation
+            k_s, & !constant parameter in regard to solute strength
+            k_p, & !constant parameter in regard to precipitate strength
+            transition_radius, & ! Transition radius between bypassing and shearing
+            M ! Taylor Factor
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
 			c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -97,8 +96,11 @@ subroutine read_configuration( &
                       diffusion0, migration_energy, & 
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
-                      incubation, enthalpy, entropy
-<<<<<<< HEAD
+                      incubation, enthalpy, entropy, k_s, & !constant parameter in regard to solute strength
+                	  k_p, & !constant parameter in regard to precipitate strength
+               		  transition_radius, & ! Transition radius between bypassing and shearing
+               		  M ! Taylor Factor for yield stress calculation
+
 
 
     ! set default values for parameters in case the user does not define them
@@ -136,10 +138,12 @@ subroutine read_configuration( &
     ! no elastic strain energy specified ==> considered as negligible
     misfit_energy=0.0_pReal
 
+	!ToDO - set default values for k_p, k_s , M and transition radius
+	k_p=0.0_pReal
+	k_s=0.0_pReal
+	M=2.0_pReal
+	transition_radius=2.7e-9_pReal
 
-
-=======
->>>>>>> 329b180c794a588c3da2dfea5da4c7ecf435e09f
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
@@ -187,6 +191,10 @@ subroutine read_configuration( &
     prm%migration_energy = migration_energy
     prm%enthalpy = enthalpy 
     prm%entropy = entropy
+    prm%k_p=k_p
+    prm%k_s=k_s
+    prm%M=M
+    prm%transition_radius=transition_radius
 
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping

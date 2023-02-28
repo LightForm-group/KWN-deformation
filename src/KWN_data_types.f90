@@ -32,7 +32,11 @@ module KWN_data_types
                 q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
                 solute_strength, & ! constant related to the solid solution hardening- cf [2]
                 enthalpy, & ! enthalpy of precipitation 
-                entropy ! entropy of precipitation
+                entropy, & ! entropy of precipitation
+                k_s, & !constant parameter in regard to solute strength
+                k_p, & !constant parameter in regard to precipitate strength
+                transition_radius, & ! Transition radius between bypassing and shearing
+                M ! Taylor Factor
 
         ! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
         real(pReal), dimension(:), allocatable :: &
@@ -55,7 +59,8 @@ module KWN_data_types
                 precipitate_density ! table with precipitate density number in each class size [/m^4]
         real(pReal),  dimension(  :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
-                time ! time [s]
+                time, & ! time [s]
+                yield_stress ! yield stress [MPa]
     end type tKwnpowerlawState
 
 

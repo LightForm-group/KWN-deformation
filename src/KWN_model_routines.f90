@@ -2,7 +2,7 @@ module KWN_model_routines
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_functions, only: calculate_shear_modulus, calculate_dislocation_density
+    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density
 
 
 contains

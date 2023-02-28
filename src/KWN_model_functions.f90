@@ -119,6 +119,31 @@ function calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, be
 
 end function calculate_nucleation_rate
 
+function calculate_yield_stress(mu,dislocation_density,dst,prm,en)
+    implicit none
+    real(pReal), intent(in) :: &
+                            mu, & !saturation dislocation density
+                            dislocation_density  !macroscopic strain
+                        
+    type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawMicrostructure), intent(in) :: dst
+    integer, intent(in) :: en
+    real(pReal) :: tau_s,tau_d,tau_p, calculate_yield_stress
+    !calculate yield stress
+        print*, 'tau_s', tau_s*1e-6
+        tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
+        print*, 'sum c', sum(dst%c_matrix(:,en))
+    !Taylor relation for dislocation contribution
+        tau_d=0.3*mu*prm%burgers*sqrt(dislocation_density)
+        print*, 'tau_d', tau_d*1e-6
+    !precipitate contribution to yield stress
+    !expression only valid if all precipitates are sheared - if not, use an expression depending on the whole distribution
+        tau_p=mu*sqrt(3.0_pReal/2.0_pReal/PI*dst%precipitate_volume_frac(en))* &
+                        prm%k_p*sqrt(dst%avg_precipitate_radius(en)/prm%transition_radius)
+        print*, 'tau_p', tau_p*1e-6
+        calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
+end function calculate_yield_stress
+
 end module KWN_model_functions
 
 

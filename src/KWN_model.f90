@@ -5,7 +5,8 @@ module KWN_model
     use KWN_model_routines, only: interface_composition, growth_precipitate, &
                                   update_precipate_properties, set_initial_timestep_constants
     use KWN_model_functions, only: calculate_binary_alloy_critical_radius, &
-                                   calculate_beta_star, calculate_nucleation_rate
+                                   calculate_beta_star, calculate_nucleation_rate, calculate_shear_modulus, &
+                                   calculate_yield_stress
     use KWN_io, only: output_results
     
 contains
@@ -417,7 +418,7 @@ subroutine run_model(prm, dot, stt, dst, &
             !temp_dislocation_density = dislocation_density
             Temperature_temp = Temperature
             !temp_diffusion_coefficient = diffusion_coefficient(1)
-
+			stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 
@@ -440,10 +441,12 @@ subroutine run_model(prm, dot, stt, dst, &
 
             endif
         endif
+        
+    
     end do loop_time
 
 
-
+	
 
 end subroutine run_model
 
