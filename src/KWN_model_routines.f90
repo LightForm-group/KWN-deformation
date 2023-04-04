@@ -174,17 +174,20 @@ subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
 									! delta=0 ==> intersection between stoichiometry and solubility line - please see e.g. Nicolas et al Acta Mat 2003 or ref 3 for more explanations 
 
                                     ! "sufficient" approximation if the precipitate is mainly made of alloying elements (the main element is ignored in the solubility product)
-                                            delta = x_eq(1)**stoechiometry(1)*&
-											((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
-											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2) &
-											-solubility_product
+                                          !  delta = x_eq(1)**stoechiometry(1)*&
+										!	((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
+										!	(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2) &
+										!	-solubility_product
                                     ! uncomment these lines if the precipitate is mainly made of principal elements (e.g. Ni3Al in Ni alloys)
                                     ! ToDO : change that as the solubility product function might not be adapted for all stroichiometries (not necessarily a monotonic function of c_eq)
-                                    		!delta = x_eq(1)**stoechiometry(1)*&
-											!((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
-											!(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)*(1-x_eq(1)-((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
-											!(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction)))**stoechiometry(3)&
-											!-solubility_product
+                                    		delta = x_eq(1)**stoechiometry(1)*&
+											((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))&
+                                            *diffusion_coefficient(1)/diffusion_coefficient(2)*&
+											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)*&
+                                            (1-x_eq(1)-((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))&
+                                            *diffusion_coefficient(1)/diffusion_coefficient(2)*&
+											(x_eq(1)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction)))**stoechiometry(3)&
+											-solubility_product
 
 									if (delta<0.0_pReal) then
 										xmin=x_eq(1)
