@@ -87,7 +87,8 @@ subroutine read_configuration( &
                       diffusion0, migration_energy, & 
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
-                      incubation
+                      incubation, mean_radius_initial_2, volume_fraction_initial_2, &
+                      shape_parameter_2
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)

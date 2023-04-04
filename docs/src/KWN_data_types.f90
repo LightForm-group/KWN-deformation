@@ -21,8 +21,11 @@ module KWN_data_types
                 vacancy_migration_energy, & ! solute migration energy in J/at
                 vacancy_diffusion0, &   ! vacancy diffusivity in m^2/s
                 mean_radius_initial,&  ! average radius initial distribution in meters
-                standard_deviation,& ! standard deviation initial distribution (log normal law assumed)
+                standard_deviation,&, ! standard deviation initial distribution (log normal law assumed)
                 volume_fraction_initial, &! initial total precipitate distribution
+                mean_radius_initial_2,&  ! average radius initial distribution in meters
+                standard_deviation_2,&, ! standard deviation initial distribution (log normal law assumed)
+                volume_fraction_initial_2 , &! initial total precipitate distribution
                 rho_0, & !initial dislocation density
                 rho_s, & !saturation dislocation density
                 strain_rate, & ! strain rate in /s
