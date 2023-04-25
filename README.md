@@ -12,13 +12,17 @@ Compiler: gfortran or ifort
 
 Installer: [Fortran Package Manager](https://fpm.fortran-lang.org/en/index.html)
 
-## Building with fpm
+## Installing the program
+
+### Building with fpm
 
 The FPM settings are defined in the file `fpm.toml`. The instructions for building and testing KWN-deform are listed below.
 
 Tests are run using the [Test Drive](https://github.com/awvwgk/test-drive) package, as listed in the `[dev-dependencies]` section of the `fpm.toml` file. This requires the `-DWITH_QP=1` flag to be included in `FPM_FFLAGS`; if you are not running the tests this flag can be left out.
 
-### Building with gfortran
+Building should be done either gfortran or intel, and the instructions are below 
+
+#### Building with gfortran
 
 Compilation with gfortran versions 6.4.0 to 11.3.0 has been tested, and the following options will create optimised binaries: 
 ```
@@ -28,7 +32,7 @@ fpm build
 fpm test
 ```
 
-### Building with intel
+#### Building with intel
 
 Compilation with intel versions 17.0.7 to 19.1.2 have been tested, and the following options will create optimised binaries:
 ```
@@ -38,7 +42,7 @@ fpm build
 fpm test
 ```
 
-## Installing with fpm
+### Installing with fpm
 
 The model can be installed using the `fpm install` command. This will install the binary and libraries (in `bin` and `lib`/`include` respectively). For a standard user these will be installed with the root `~/.local/`, but to change this root you can use the `--prefix` flag:
 ```
