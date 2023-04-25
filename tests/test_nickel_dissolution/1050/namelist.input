@@ -38,4 +38,8 @@ n = 6.6831e+00
 incubation = 0 
 enthalpy = 62.259e+03
 entropy= 22.6107
+k_p=0.1
+k_s=0.1
+M=2.0
+transition_radius=2.7e-9
 /

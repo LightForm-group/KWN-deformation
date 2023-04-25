@@ -59,7 +59,8 @@ module KWN_data_types
                 precipitate_density ! table with precipitate density number in each class size [/m^4]
         real(pReal),  dimension(  :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
-                time, & ! time [s]
+                time! time [s]
+        real(pReal), dimension(1) ::&
                 yield_stress ! yield stress [MPa]
     end type tKwnpowerlawState
 

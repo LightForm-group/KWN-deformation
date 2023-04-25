@@ -179,8 +179,11 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     dt = min(dt_max, dt)
 
     ! define the output file suffix (contains Temperature in °C and strain rate in /s)
-    write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(Temperature)-273, prm%strain_rate
-
+    if (temperature<1273) then
+        write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(Temperature)-273, prm%strain_rate
+    else
+        write(filesuffix, '(I4,"C_strain_rate",ES9.3, ".txt")') int(Temperature)-273, prm%strain_rate
+    endif
     !! initialise the bins for the size distribution
     ! SAM: Adjusted binning
     !---------------------------------------------------------------------------------------------------------------------------------

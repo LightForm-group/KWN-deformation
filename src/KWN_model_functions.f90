@@ -142,6 +142,7 @@ function calculate_yield_stress(mu,dislocation_density,dst,prm,en)
                         prm%k_p*sqrt(dst%avg_precipitate_radius(en)/prm%transition_radius)
         print*, 'tau_p', tau_p*1e-6
         calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
+        print*, 'calculated yield stress: ', calculate_yield_stress, 'Pa'
 end function calculate_yield_stress
 
 end module KWN_model_functions
