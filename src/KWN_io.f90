@@ -68,13 +68,8 @@ subroutine read_configuration( &
 			burgers, & !matrice burgers vector
 			jog_formation_energy, & ! formation energy for jogs
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
-<<<<<<< HEAD
             enthalpy, & ! enthalpy of precipitation
             entropy  ! entropy of precipitation
-=======
-            enthalpy, & 
-            entropy
->>>>>>> 329b180c794a588c3da2dfea5da4c7ecf435e09f
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
 			c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -98,7 +93,6 @@ subroutine read_configuration( &
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
                       incubation, enthalpy, entropy
-<<<<<<< HEAD
 
 
     ! set default values for parameters in case the user does not define them
@@ -138,8 +132,6 @@ subroutine read_configuration( &
 
 
 
-=======
->>>>>>> 329b180c794a588c3da2dfea5da4c7ecf435e09f
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
