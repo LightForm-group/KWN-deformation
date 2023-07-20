@@ -3,7 +3,7 @@ module KWN_io
     use KWN_precision
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_parameters
-    
+
 contains
     
 subroutine read_configuration( &
@@ -11,7 +11,6 @@ subroutine read_configuration( &
                             prm, &
                             Temperature, &
                             shape_parameter, &  ! the initial distribution is defined by mean radius, volume fraction and shape parameter of a log normal distribution - see e.g. ref [4]
-                            total_time, &  ![s]
                             dt_max, &  ![s]
                             time_record_step, &  ![s]
                             incubation  & !incubation prefactor, either 0 or 1)
@@ -25,7 +24,6 @@ subroutine read_configuration( &
     real(pReal), intent(out) :: &
         Temperature, &
         shape_parameter, &
-        total_time, &
         dt_max, &
         time_record_step, &
         incubation
@@ -54,6 +52,7 @@ subroutine read_configuration( &
 			rho_0, & !initial dislocation density
 			rho_s, & !saturation dislocation density
 			strain_rate, & ! strain rate in /s
+            total_time, & !total heat treatment time for the simulation
 			dislocation_arrangement, & ! constant related to the dislocation density in the vacancy annihilation term, cf [1]
 			burgers, & !matrice burgers vector
 			jog_formation_energy, & ! formation energy for jogs
@@ -200,6 +199,7 @@ subroutine read_configuration( &
     prm%M=M
     prm%transition_radius=transition_radius
     prm%stoechiometry=stoechiometry
+    prm%total_time=total_time ! heat treatment time for the simulation 
 
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping

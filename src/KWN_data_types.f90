@@ -26,6 +26,7 @@ module KWN_data_types
                 rho_0, & !initial dislocation density
                 rho_s, & !saturation dislocation density
                 strain_rate, & ! strain rate in /s
+                total_time, & ! heat treatment time for the simulation in s
                 dislocation_arrangement, & ! constant related to the dislocation density in the vacancy annihilation term, cf [1]
                 burgers, & !matrice burgers vector
                 jog_formation_energy, & ! formation energy for jogs
@@ -54,7 +55,7 @@ module KWN_data_types
                 migration_energy        !  solute migration energy in J/at
         integer, dimension(:), allocatable :: &
                 stoechiometry
-                
+
         real(pReal), dimension(:),   allocatable :: &
                 bins                    ! Bins for class sizes in KWN model
             character(len=15), allocatable, dimension(:) :: &

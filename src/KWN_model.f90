@@ -17,7 +17,7 @@ subroutine run_model(prm, dot, stt, dst, &
                     Temperature, radius_crit, interface_c, time_record_step, &
                     c_thermal_vacancy, shape_parameter, &
                     incubation, diffusion_coefficient, &
-                    dt, dt_max, total_time, growth_rate_array, &
+                    dt, dt_max, growth_rate_array, &
                     x_eq_interface, &
                     filesuffix, testfolder &
                     )
@@ -55,8 +55,7 @@ subroutine run_model(prm, dot, stt, dst, &
         diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
     real(pReal), intent(in) :: &
-        dt_max, & ! max time step for integration [s]
-        total_time ![s]
+        dt_max ! max time step for integration [s]
 
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
@@ -151,7 +150,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
     k = 0
-    loop_time : do while  (stt%time(en).LE. total_time)
+    loop_time : do while  (stt%time(en).LE. prm%total_time)
         k=k+1
         
         ! print*, "dt:", dt

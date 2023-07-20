@@ -14,7 +14,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Temperature, radius_crit, interface_c, time_record_step, &
                                 c_thermal_vacancy, shape_parameter, &
                                 incubation, diffusion_coefficient, &
-                                dt, dt_max, total_time, growth_rate_array, &
+                                dt, dt_max, growth_rate_array, &
                                 x_eq_interface, &
                                 filesuffix, testfolder &
                                 )
@@ -52,8 +52,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     real(pReal), intent(out) :: &
         dt, & !time step for integration [s]
-        dt_max, & ! max time step for integration [s]
-        total_time ![s]
+        dt_max ! max time step for integration [s]
 
     character*100, intent(out) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
     character*100, intent(out) :: testfolder !folder where the input file is
@@ -101,7 +100,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                             prm, &
                             Temperature, &
                             shape_parameter, &  ! the initial distribution is defined by mean radius, volume fraction and shape parameter of a log normal distribution - see e.g. ref [4]
-                            total_time, &  ![s]
                             dt_max, &  ![s]
                             time_record_step, &  ![s]
                             incubation &  !incubation prefactor, either 0 or 1)
@@ -352,7 +350,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
                                shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
                                mean_particle_strength, &
-                               time_record_step, total_time, x_eq_interface, en)
+                               time_record_step, x_eq_interface, en)
     
     print*, 'Writing outputs'
 
@@ -367,7 +365,7 @@ end subroutine initialise_model_state
 subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
                                shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
                                mean_particle_strength, &
-                               time_record_step, total_time, x_eq_interface, en)
+                               time_record_step, x_eq_interface, en)
     implicit none
 
     type(tParameters), intent(in) :: prm
@@ -382,7 +380,6 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
         dt, & !time step for integration [s]
         dt_max, & ! max time step for integration [s]
         time_record_step, & ! time step for the output [s]
-        total_time, & ![s]
         Temperature, & !temperature in K
         mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
         shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]

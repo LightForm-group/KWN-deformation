@@ -55,8 +55,7 @@ program KWN
 
     real(pReal) :: &
         dt, & !time step for integration [s]
-        dt_max, & ! max time step for integration [s]
-        total_time ![s]
+        dt_max ! max time step for integration [s]
 
     character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
     character*100 :: testfolder !folder where the input file is
@@ -68,7 +67,7 @@ program KWN
                                 Temperature, radius_crit, interface_c, time_record_step, &
                                 c_thermal_vacancy, shape_parameter, &
                                 incubation, diffusion_coefficient, &
-                                dt, dt_max, total_time, growth_rate_array, &
+                                dt, dt_max, growth_rate_array, &
                                 x_eq_interface, &
                                 filesuffix, testfolder &
                                 )
@@ -81,7 +80,7 @@ program KWN
                    Temperature, radius_crit, interface_c, time_record_step, &
                    c_thermal_vacancy, shape_parameter, &
                    incubation, diffusion_coefficient, &
-                   dt, dt_max, total_time, growth_rate_array, &
+                   dt, dt_max, growth_rate_array, &
                    x_eq_interface, &
                    filesuffix, testfolder &
                    )
