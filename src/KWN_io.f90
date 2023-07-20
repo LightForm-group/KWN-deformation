@@ -13,10 +13,6 @@ subroutine read_configuration( &
                             total_time, &  ![s]
                             dt_max, &  ![s]
                             time_record_step, &  ![s]
-                            sigma_r, &  ![MPa] - sinepower law for stress
-                            A, & ![/s] - sinepower law for stress
-                            Q_stress, &  ![J/mol] - activation energy in flow stress law
-                            n, &  !exponent in sinepower law for stress
                             incubation,  & !incubation prefactor, either 0 or 1)
                             stoechiometry, &
                             N_elements &
@@ -35,10 +31,6 @@ subroutine read_configuration( &
         total_time, &
         dt_max, &
         time_record_step, &
-        sigma_r, &
-        A, &
-        Q_stress, &
-        n, &
         incubation
 
     ! local variables
@@ -70,6 +62,12 @@ subroutine read_configuration( &
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
             enthalpy, & ! enthalpy of precipitation
             entropy, &  ! entropy of precipitation
+            ! option 1 for flow stress calculation
+            sigma_r, &  ![MPa] - sinepower law for stress
+            A, & ![/s] - sinepower law for stress
+            Q_stress, &  ![J/mol] - activation energy in flow stress law
+            n, &  !exponent in sinepower law for stress
+            ! option 2 for flow stress calculation
             k_s, & !constant parameter in regard to solute strength
             k_p, & !constant parameter in regard to precipitate strength
             transition_radius, & ! Transition radius between bypassing and shearing
@@ -109,11 +107,19 @@ subroutine read_configuration( &
     enthalpy=0.0_pReal ! if enthalpy and entropy are not given, they are set to 0 and ignored
     entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
 
-    ! the following have been set for aluminium
+    ! the following have been set for aluminium and allow to calculate flow stress 
     sigma_r = 1.0000e+08 
     A = 5.2140e-06 
     Q_stress = 6.0000e+04 
     n = 6.6831e+00 
+	!ToDO - if these parameters are given, they allow to calculate the flow stress as a function of solid solution hardening, precipitation and dislocation
+    ! if used they should be calibrated for each temperature - possibly each strain rate... 
+	k_p=0.035_pReal
+	k_s=683.0e+06_pReal
+	M=2.0_pReal
+	transition_radius=3.3e-9_pReal
+
+
     ! no deformation parameters given -> no deformation 
     strain_rate=0.0_pReal
 ! ! if nothing about vacancies is specified, ignore them
@@ -138,11 +144,7 @@ subroutine read_configuration( &
     ! no elastic strain energy specified ==> considered as negligible
     misfit_energy=0.0_pReal
 
-	!ToDO - set default values for k_p, k_s , M and transition radius
-	k_p=0.0_pReal
-	k_s=0.0_pReal
-	M=2.0_pReal
-	transition_radius=2.7e-9_pReal
+
 
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
@@ -191,6 +193,10 @@ subroutine read_configuration( &
     prm%migration_energy = migration_energy
     prm%enthalpy = enthalpy 
     prm%entropy = entropy
+    prm%sigma_r = sigma_r 
+    prm%A = A
+    prm%Q_stress = Q_stress
+    prm%n = n
     prm%k_p=k_p
     prm%k_s=k_s
     prm%M=M

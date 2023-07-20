@@ -15,8 +15,8 @@ subroutine run_model(prm, dot, stt, dst, &
                     Nmembers, N_elements, en, &
                     stoechiometry, normalized_distribution_function, &
                     Temperature, radius_crit, interface_c, time_record_step, &
-                    c_thermal_vacancy, shape_parameter, sigma_r, A, &
-                    incubation, Q_stress, n, diffusion_coefficient, &
+                    c_thermal_vacancy, shape_parameter, &
+                    incubation, diffusion_coefficient, &
                     dt, dt_max, total_time, growth_rate_array, &
                     x_eq_interface, &
                     filesuffix, testfolder &
@@ -45,11 +45,7 @@ subroutine run_model(prm, dot, stt, dst, &
         interface_c, & !interface composition between matrix and a precipitate
         time_record_step, & ! time step for the output [s]
         shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
-        sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
-        A, &  ! constant in the sinepowerlaw for flow stress  [/s]
-        incubation, & ! incubation prefactor either 0 or 1
-        Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
-        n ! stress exponent in the sinepower law for flow stress
+        incubation  ! incubation prefactor either 0 or 1
 
     real(pReal), intent(inout) :: &
         Temperature, & !temperature in K
@@ -165,7 +161,7 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
         
         
-        call set_initial_timestep_constants(prm, stt, dot, Temperature, sigma_r, A, Q_stress, n, dt, en, &
+        call set_initial_timestep_constants(prm, stt, dot, Temperature, dt, en, &
                                           diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
                                           production_rate, annihilation_rate)
                                           
@@ -418,7 +414,8 @@ subroutine run_model(prm, dot, stt, dst, &
             !temp_dislocation_density = dislocation_density
             Temperature_temp = Temperature
             !temp_diffusion_coefficient = diffusion_coefficient(1)
-			stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
+            stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
+            print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 

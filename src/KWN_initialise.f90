@@ -12,8 +12,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, N_elements, en, &
                                 stoechiometry, normalized_distribution_function, &
                                 Temperature, radius_crit, interface_c, time_record_step, &
-                                c_thermal_vacancy, shape_parameter, sigma_r, A, &
-                                incubation, Q_stress, n, diffusion_coefficient, &
+                                c_thermal_vacancy, shape_parameter, &
+                                incubation, diffusion_coefficient, &
                                 dt, dt_max, total_time, growth_rate_array, &
                                 x_eq_interface, &
                                 filesuffix, testfolder &
@@ -45,11 +45,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         time_record_step, & ! time step for the output [s]
         c_thermal_vacancy, & ! concentration in thermal vacancies
         shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
-        sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
-        A, &  ! constant in the sinepowerlaw for flow stress  [/s]
-        incubation, & ! incubation prefactor either 0 or 1
-        Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
-        n ! stress exponent in the sinepower law for flow stress
+        incubation
     
 
     real(pReal), dimension(:), allocatable, intent(out) ::   &
@@ -109,10 +105,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                             total_time, &  ![s]
                             dt_max, &  ![s]
                             time_record_step, &  ![s]
-                            sigma_r, &  ![MPa] - sinepower law for stress
-                            A, & ![/s] - sinepower law for stress
-                            Q_stress, &  ![J/mol] - activation energy in flow stress law
-                            n, &  !exponent in sinepower law for stress
                             incubation, & !incubation prefactor, either 0 or 1)
                             stoechiometry, &
                             N_elements & 
@@ -141,6 +133,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
     allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
     allocate(stt%c_vacancy (Nmembers), source=0.0_pReal) ! Number of excess vacancies
+    allocate(stt%yield_stress (Nmembers), source=0.0_pReal) ! Yield stress that will be calculated from solid solution, dislocation and precipitates
     allocate(dot%c_vacancy (Nmembers), source=0.0_pReal) !Time derivative of excess vacancies
 
 
@@ -219,8 +212,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                 normalized_distribution_function(bin,en) =  1.0_pReal / sqrt(PI * 2.0_pReal) &
                                                                                 / shape_parameter / radiusC &
                                                                                 * exp( -1.0 / 2.0 * &
-                                                                                     ( log( radiusC / prm%mean_radius_initial ) &
-                                                                                       + shape_parameter**2 / 2 )**2 / shape_parameter**2 )
+                                                                                ( log( radiusC / prm%mean_radius_initial )&
+                                                                                + shape_parameter**2 / 2 )**2 / shape_parameter**2 )
                                 enddo distribution_function
 
         !print*, normalized_distribution_function
@@ -361,7 +354,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
                                shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
-                               mean_particle_strength, Q_stress, &
+                               mean_particle_strength, &
                                time_record_step, total_time, x_eq_interface, en)
     
     print*, 'Writing outputs'
@@ -376,7 +369,7 @@ end subroutine initialise_model_state
 
 subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
                                shape_parameter, Temperature, dt, dt_max, growth_rate_array, &
-                               mean_particle_strength, Q_stress, &
+                               mean_particle_strength, &
                                time_record_step, total_time, x_eq_interface, en)
     implicit none
 
@@ -389,7 +382,6 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
         x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
     real(pReal), intent(in) :: &
-        Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
         dt, & !time step for integration [s]
         dt_max, & ! max time step for integration [s]
         time_record_step, & ! time step for the output [s]

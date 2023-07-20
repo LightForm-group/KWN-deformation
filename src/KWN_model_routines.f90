@@ -8,7 +8,7 @@ module KWN_model_routines
 contains
 
 
-subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, sigma_r, A, Q_stress, n, dt, en, &
+subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, dt, en, &
                                           diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
                                           production_rate, annihilation_rate)
 
@@ -17,10 +17,6 @@ subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, sigma_r, A
     type(tKwnpowerlawState), intent(inout) :: dot, stt
     real(pReal), intent(in) :: &
         Temperature, & !temperature in K
-        sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
-        A, &  ! constant in the sinepowerlaw for flow stress  [/s]
-        Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
-        n, & ! stress exponent in the sinepower law for flow stress
         dt !time step for integration [s]
     integer, intent(in) :: en
 
@@ -47,14 +43,14 @@ subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, sigma_r, A
 	! if there is deformation, calculate the vacancy related parameters
 
 
-	flow_stress = sigma_r * asinh(((prm%strain_rate / (A)) * exp(Q_stress / ( 8.314 * Temperature) )) ** (1/n))
+	stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * Temperature) )) ** (1/prm%n))
 	c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
 	c_j = exp(-prm%jog_formation_energy / (kB * Temperature) )
 	strain = prm%strain_rate * stt%time(en)
 	dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
 
 	! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]
-	production_rate =   prm%vacancy_generation * flow_stress * prm%atomic_volume * prm%strain_rate &
+	production_rate =   prm%vacancy_generation * stt%yield_stress(en) * prm%atomic_volume * prm%strain_rate &
 							 / prm%vacancy_energy &
 						+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
@@ -245,9 +241,12 @@ subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometr
                                         !  find the intersection between stoichiometric line and solubility line by dichotomy
                                         ! delta=0 ==> intersection between stoichiometry and solubility line
                                         delta = x_eq_interface(i)**stoechiometry(1)*&
-                                                ((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))*diffusion_coefficient(1)/diffusion_coefficient(2)*&
-                                                (x_eq_interface(i)*(1-volume_fraction)-c_matrix(1)))/(1-volume_fraction))**stoechiometry(2)&
-                                                -solubility_product*exp(2.0*molar_volume*gamma_coherent/R/Temperature/bins(i)*real(sum(stoechiometry)) )
+                                                ((c_matrix(2)+real(stoechiometry(2))/real(stoechiometry(1))&
+                                                *diffusion_coefficient(1)/diffusion_coefficient(2)*&
+                                                (x_eq_interface(i)*(1-volume_fraction)-c_matrix(1)))/&
+                                                (1-volume_fraction))**stoechiometry(2)&
+                                                -solubility_product*exp(2.0*molar_volume*gamma_coherent/R/Temperature/bins(i)&
+                                                *real(sum(stoechiometry)) )
 
                                         if (delta<0.0_pReal) then
                                             xmin=x_eq_interface(i)
@@ -258,7 +257,9 @@ subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometr
                                     enddo
 
                                 else
-                                    x_eq_interface(i) =ceq_matrix(1)*exp((2.0*molar_volume*gamma_coherent/(R*Temperature*bins(i)*ceq_precipitate(1)))+molar_volume*misfit_energy/(R*Temperature)) ! Gibbs Thomson effect for a precipitate with a single alloying element
+                                    x_eq_interface(i) =ceq_matrix(1)&
+                                    *exp((2.0*molar_volume*gamma_coherent/(R*Temperature*bins(i)*ceq_precipitate(1)))&
+                                    +molar_volume*misfit_energy/(R*Temperature)) ! Gibbs Thomson effect for a precipitate with a single alloying element
 
                                 endif
 

@@ -130,8 +130,9 @@ function calculate_yield_stress(mu,dislocation_density,dst,prm,en)
     integer, intent(in) :: en
     real(pReal) :: tau_s,tau_d,tau_p, calculate_yield_stress
     !calculate yield stress
-        print*, 'tau_s', tau_s*1e-6
+       
         tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
+        print*, 'tau_s', tau_s*1e-6
         print*, 'sum c', sum(dst%c_matrix(:,en))
     !Taylor relation for dislocation contribution
         tau_d=0.3*mu*prm%burgers*sqrt(dislocation_density)
@@ -142,6 +143,7 @@ function calculate_yield_stress(mu,dislocation_density,dst,prm,en)
                         prm%k_p*sqrt(dst%avg_precipitate_radius(en)/prm%transition_radius)
         print*, 'tau_p', tau_p*1e-6
         calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
+      !  print*, 'Yield stress function:', calculate_yield_stress*1e-6, 'MPa'
 end function calculate_yield_stress
 
 end module KWN_model_functions

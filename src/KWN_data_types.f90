@@ -33,6 +33,14 @@ module KWN_data_types
                 solute_strength, & ! constant related to the solid solution hardening- cf [2]
                 enthalpy, & ! enthalpy of precipitation 
                 entropy, & ! entropy of precipitation
+                ! the following parameters are to calculate the flow stress during deformation - there are two options detailed below
+                ! option 1 - use a sinepower law that depends on temperature and strain rate for the flow stress, that is then taken as constant during deformation
+                sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
+                A, &  ! constant in the sinepowerlaw for flow stress  [/s]
+                incubation, & ! incubation prefactor either 0 or 1
+                Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
+                n, & ! stress exponent in the sinepower law for flow stress
+                ! option 2 - use an expression for the flow stress that accounts for solid solution hardening, precipitation and dislocations
                 k_s, & !constant parameter in regard to solute strength
                 k_p, & !constant parameter in regard to precipitate strength
                 transition_radius, & ! Transition radius between bypassing and shearing
