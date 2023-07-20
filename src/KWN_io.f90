@@ -9,7 +9,6 @@ contains
 subroutine read_configuration( &
                             testfolder, &
                             prm, &
-                            time_record_step, &  ![s]
                             incubation  & !incubation prefactor, either 0 or 1)
                             )
     
@@ -19,7 +18,6 @@ subroutine read_configuration( &
     character*100, intent(out) :: testfolder
     type(tParameters), intent(inout) :: prm
     real(pReal), intent(out) :: &
-        time_record_step, &
         incubation
         
 
@@ -65,7 +63,9 @@ subroutine read_configuration( &
             k_p, & !constant parameter in regard to precipitate strength
             transition_radius, & ! Transition radius between bypassing and shearing
             M, & ! Taylor Factor
-            dt_max 
+            dt_max, &
+            time_record_step
+
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
 			c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -139,6 +139,8 @@ subroutine read_configuration( &
     misfit_energy=0.0_pReal
     ! default value for max time step for integration
     dt_max=0.5
+    !default value for period to store the outputs
+    time_record_step=1.0_pReal
 
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
@@ -200,6 +202,7 @@ subroutine read_configuration( &
     prm%stoechiometry=stoechiometry
     prm%total_time=total_time ! heat treatment time for the simulation 
     prm%dt_max=dt_max
+    prm%time_record_step=time_record_step
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
      !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)

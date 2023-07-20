@@ -10,7 +10,7 @@ contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers,  en, &
-                                interface_c, time_record_step, &
+                                interface_c,&
                                 incubation, &
                                 dt, growth_rate_array, &
                                 x_eq_interface, &
@@ -34,7 +34,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     real(pReal), intent(out) :: &
         interface_c, & !interface composition between matrix and a precipitate
-        time_record_step, & ! time step for the output [s]
         incubation
     
 
@@ -64,7 +63,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     en = 1
 
-    time_record_step = 0.5
+ 
 
 
     ! --------------------------
@@ -85,7 +84,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     call read_configuration( &
                             testfolder, &
                             prm, &
-                            time_record_step, &  ![s]
                             incubation &  !incubation prefactor, either 0 or 1)
                             )
 
@@ -330,7 +328,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate,  &
                                 dt, growth_rate_array, &
                                mean_particle_strength, &
-                               time_record_step, x_eq_interface, en)
+                               x_eq_interface, en)
     
     print*, 'Writing outputs'
 
@@ -345,7 +343,7 @@ end subroutine initialise_model_state
 subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, &
                                dt, growth_rate_array, &
                                mean_particle_strength, &
-                               time_record_step, x_eq_interface, en)
+                               x_eq_interface, en)
     implicit none
 
     type(tParameters), intent(in) :: prm
@@ -358,7 +356,6 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 
     real(pReal), intent(in) :: &
         dt, & !time step for integration [s]
-        time_record_step, & ! time step for the output [s]
         mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
         nucleation_rate ! part/m^3/s
     

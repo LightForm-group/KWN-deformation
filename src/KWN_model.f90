@@ -13,7 +13,7 @@ contains
 
 subroutine run_model(prm, dot, stt, dst, &
                     Nmembers, en, &
-                    interface_c, time_record_step, &
+                    interface_c,&
                     incubation, &
                     dt, growth_rate_array, &
                     x_eq_interface, &
@@ -37,7 +37,6 @@ subroutine run_model(prm, dot, stt, dst, &
 
     real(pReal), intent(in) :: &
         interface_c, & !interface composition between matrix and a precipitate
-        time_record_step, & ! time step for the output [s]
         incubation  ! incubation prefactor either 0 or 1
 
 
@@ -415,9 +414,9 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
                 ! next time for which the outputs should be written
-                        if (time_record_step > 0) then
+                        if (prm%time_record_step > 0) then
                             !Save data linearly
-                            time_record = time_record + time_record_step
+                            time_record = time_record + prm%time_record_step
 
                         else
                             !save data logarithimically

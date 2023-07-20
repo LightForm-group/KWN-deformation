@@ -39,7 +39,6 @@ program KWN
 
     real(pReal) :: &
         interface_c, & !interface composition between matrix and a precipitate
-        time_record_step, & ! time step for the output [s]
         incubation ! incubation prefactor either 0 or 1
 
     real(pReal) :: &
@@ -51,7 +50,7 @@ program KWN
 
     call initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, en, &
-                                interface_c, time_record_step, &
+                                interface_c, &
                                 incubation, &
                                 dt, growth_rate_array, &
                                 x_eq_interface, &
@@ -62,7 +61,7 @@ program KWN
 
     call run_model(prm, dot, stt, dst, &
                    Nmembers, en, &
-                   interface_c, time_record_step, &
+                   interface_c,  &
                    incubation, &
                    dt, growth_rate_array, &
                    x_eq_interface, &

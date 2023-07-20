@@ -46,7 +46,9 @@ module KWN_data_types
                 k_p, & !constant parameter in regard to precipitate strength
                 transition_radius, & ! Transition radius between bypassing and shearing
                 M,& ! Taylor Factor
-                dt_max ! max time step for numerical integration
+                dt_max,& ! max time step for numerical integration
+                time_record_step ! defines the frequency for the output files
+
         ! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
         real(pReal), dimension(:), allocatable :: &
                 c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -88,7 +90,7 @@ module KWN_data_types
         real(pReal), dimension(:,:), allocatable :: &
                 c_matrix, &
                 diffusion_coefficient
-                
+
      end type tKwnpowerlawMicrostructure
     
 
