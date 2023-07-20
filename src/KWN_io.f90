@@ -2,6 +2,7 @@ module KWN_io
 
     use KWN_precision
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
+    use KWN_parameters
     
 contains
     
@@ -13,9 +14,7 @@ subroutine read_configuration( &
                             total_time, &  ![s]
                             dt_max, &  ![s]
                             time_record_step, &  ![s]
-                            incubation,  & !incubation prefactor, either 0 or 1)
-                            stoechiometry, &
-                            N_elements &
+                            incubation  & !incubation prefactor, either 0 or 1)
                             )
     
 
@@ -23,8 +22,6 @@ subroutine read_configuration( &
 
     character*100, intent(out) :: testfolder
     type(tParameters), intent(inout) :: prm
-    integer, dimension(:), allocatable, intent(inout) :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
-    integer, intent(in) :: N_elements
     real(pReal), intent(out) :: &
         Temperature, &
         shape_parameter, &
@@ -32,6 +29,7 @@ subroutine read_configuration( &
         dt_max, &
         time_record_step, &
         incubation
+        
 
     ! local variables
     INTEGER :: status ! I/O status
@@ -79,7 +77,7 @@ subroutine read_configuration( &
 			diffusion0, &           ! solute diffusivity in m^2/s : [Mg, Zn] - in the present version of the code - the diffusion coefficient is taken as identical for both solute and equal to the slowest diffuser (Mg)
 			migration_energy        !  solute migration energy in J/at
 
-    
+    integer, dimension(:), allocatable :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
 
 
 
@@ -114,7 +112,7 @@ subroutine read_configuration( &
     n = 6.6831e+00 
 	!ToDO - if these parameters are given, they allow to calculate the flow stress as a function of solid solution hardening, precipitation and dislocation
     ! if used they should be calibrated for each temperature - possibly each strain rate... 
-	k_p=0.035_pReal
+	k_p=0.0_pReal ! for now the choice is not to use this way of calculating the flow stress unless defined by the user - a value for k_p could be 0.035_pReal
 	k_s=683.0e+06_pReal
 	M=2.0_pReal
 	transition_radius=3.3e-9_pReal
@@ -152,7 +150,7 @@ subroutine read_configuration( &
     allocate(diffusion0(N_elements), source=0.0_pReal)
     allocate(c0_matrix(N_elements), source=0.0_pReal)
     allocate(ceq_matrix(N_elements), source=0.0_pReal)
-
+    allocate(stoechiometry(N_elements+1))
 
     print*, 'Reading input file...'
 
@@ -201,6 +199,7 @@ subroutine read_configuration( &
     prm%k_s=k_s
     prm%M=M
     prm%transition_radius=transition_radius
+    prm%stoechiometry=stoechiometry
 
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping

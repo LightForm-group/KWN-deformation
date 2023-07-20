@@ -9,8 +9,8 @@ module KWN_initialise
 contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
-                                Nmembers, N_elements, en, &
-                                stoechiometry, normalized_distribution_function, &
+                                Nmembers,  en, &
+                                normalized_distribution_function, &
                                 Temperature, radius_crit, interface_c, time_record_step, &
                                 c_thermal_vacancy, shape_parameter, &
                                 incubation, diffusion_coefficient, &
@@ -27,10 +27,9 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     integer, intent(out) :: &
         Nmembers, &
-        N_elements, & ! number of different elements in the precipitate
         en
 
-    integer, dimension(:), allocatable, intent(out) :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
+    
 
     real(pReal), dimension(:,:), allocatable, intent(out) :: &
         normalized_distribution_function !normalised distribution for the precipitate size
@@ -74,7 +73,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         vol_int
 
 
-    N_elements = 2 ! number of solute elements in the precipitate
+  
     Nmembers = 1 ! Nmembers is the number of point in the simulation - here 1 as it's a single point model
 
     en = 1
@@ -89,7 +88,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(prm%c0_matrix(N_elements), source=0.0_pReal)
     allocate(prm%ceq_matrix(N_elements), source=0.0_pReal)
     allocate(prm%ceq_precipitate(N_elements), source=0.0_pReal)
-    allocate(stoechiometry(N_elements+1))
+    allocate(prm%stoechiometry(N_elements+1))
    
 
 
@@ -105,9 +104,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                             total_time, &  ![s]
                             dt_max, &  ![s]
                             time_record_step, &  ![s]
-                            incubation, & !incubation prefactor, either 0 or 1)
-                            stoechiometry, &
-                            N_elements & 
+                            incubation &  !incubation prefactor, either 0 or 1)
                             )
 
     
@@ -151,7 +148,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
 
 
-    prm%ceq_precipitate = real(stoechiometry(1:2)) / real(sum(stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
+    prm%ceq_precipitate = real(prm%stoechiometry(1:2)) / real(sum(prm%stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
 
       !calculate initial diffusion coefficient
     diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
@@ -160,7 +157,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     ! if the enthalpy and entropy are provided, then the equilibrium concentration should be calculated, otherwise take the input value for equilibrium concentration
     if (prm%entropy>0.0_pReal) then
-		call 			equilibrium_flat_interface(Temperature,  N_elements,  stoechiometry, &
+		call 			equilibrium_flat_interface(Temperature,  N_elements,  prm%stoechiometry, &
 												   prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
 												   diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
 	endif
@@ -315,7 +312,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
 
     !calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
-    call interface_composition( Temperature,  N_elements, prm%kwn_nSteps, stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
+    call interface_composition( Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
                                 prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
                                 R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
@@ -334,7 +331,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     !the critical radius for dissolution if calculated from the precipitate growth rate array - display it
    print*, ''
-   print*, 'radius crit:', radius_crit*1.0e9, ' nm'
+   print*, 'Critical radius:', radius_crit*1.0e9, ' nm'
 
 
     c_thermal_vacancy = 1.0
@@ -401,12 +398,12 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
     character*200 :: filename !name of the gile where the outputs will be written
     integer :: bin, i, status
 
-    print*, 'file_suffix : ', filesuffix
+    ! print*, 'file_suffix : ', filesuffix
 
     !Write the initial precipitate distribution in a textfile
     filename = 'results/initial_precipitation_distribution_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
-    print*, 'File name:', filename 
+   !  print*, 'File name:', filename 
     print*, 'Creating initial distribution output file... '
   
     open(unit=1, file = filename,  STATUS='replace', ACTION='WRITE', IOSTAT=status)

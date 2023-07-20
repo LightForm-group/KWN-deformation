@@ -12,8 +12,8 @@ module KWN_model
 contains
 
 subroutine run_model(prm, dot, stt, dst, &
-                    Nmembers, N_elements, en, &
-                    stoechiometry, normalized_distribution_function, &
+                    Nmembers, en, &
+                    normalized_distribution_function, &
                     Temperature, radius_crit, interface_c, time_record_step, &
                     c_thermal_vacancy, shape_parameter, &
                     incubation, diffusion_coefficient, &
@@ -30,10 +30,9 @@ subroutine run_model(prm, dot, stt, dst, &
 
     integer, intent(in) :: &
         Nmembers, &
-        N_elements, & ! number of different elements in the precipitate
         en
 
-    integer, dimension(:), allocatable, intent(in) :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
+    
 
     real(pReal), dimension(:,:), allocatable, intent(in) :: &
         normalized_distribution_function !normalised distribution for the precipitate size
@@ -155,13 +154,14 @@ subroutine run_model(prm, dot, stt, dst, &
     loop_time : do while  (stt%time(en).LE. total_time)
         k=k+1
         
-        print*, "dt:", dt
+        ! print*, "dt:", dt
+        print*, ' '
         print*, 'Time:', stt%time(en)
         print*, 'Temperature', Temperature
         print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
         
         
-        call set_initial_timestep_constants(prm, stt, dot, Temperature, dt, en, &
+        call set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, en, &
                                           diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
                                           production_rate, annihilation_rate)
                                           
@@ -191,7 +191,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         incubation_time = incubation * 2.0 &
                             / ( PI * zeldovich_factor**2.0 * beta_star )
-        print*, 'Incubation time', incubation_time
+        ! print*, 'Incubation time', incubation_time
 
         if (stt%time(en) > 0.0_pReal) then
             nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
@@ -345,7 +345,7 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
         print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
         print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
-        print*, 'vf eq', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
+        print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
         print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
         print*, 'Critical Radius : ', radius_crit*1e9, 'nm'
         
@@ -393,7 +393,7 @@ subroutine run_model(prm, dot, stt, dst, &
                 dt = min( dt_max, &
                           (prm%bins(1)-prm%bins(0)) / maxval(abs(growth_rate_array)) &
                         )
-                print*,'dt growth rate', (prm%bins(1) - prm%bins(0)) / maxval(abs(growth_rate_array))
+                ! print*,'dt growth rate', (prm%bins(1) - prm%bins(0)) / maxval(abs(growth_rate_array))
 
             else
                 dt = min(dt_max, dt*1.2) !increase slightly the time step by an arbitrary factor as long as there are no precipitates
@@ -414,7 +414,7 @@ subroutine run_model(prm, dot, stt, dst, &
             !temp_dislocation_density = dislocation_density
             Temperature_temp = Temperature
             !temp_diffusion_coefficient = diffusion_coefficient(1)
-            stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
+            !stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
             print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds

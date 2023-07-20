@@ -2,18 +2,19 @@ module KWN_model_routines
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density
+    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress
 
 
 contains
 
 
-subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, dt, en, &
+subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, en, &
                                           diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
                                           production_rate, annihilation_rate)
 
     implicit none
     type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawMicrostructure), intent(in) :: dst
     type(tKwnpowerlawState), intent(inout) :: dot, stt
     real(pReal), intent(in) :: &
         Temperature, & !temperature in K
@@ -42,9 +43,14 @@ subroutine set_initial_timestep_constants(prm, stt, dot, Temperature, dt, en, &
 
 	! if there is deformation, calculate the vacancy related parameters
 
-
-	stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * Temperature) )) ** (1/prm%n))
-	c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
+    ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
+    ! otherwise; use the asinh function for the flow stress 
+    if(prm%k_p>0.0_pReal) then
+	    stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
+    else    
+        stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * Temperature) )) ** (1/prm%n))
+    endif
+    c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
 	c_j = exp(-prm%jog_formation_energy / (kB * Temperature) )
 	strain = prm%strain_rate * stt%time(en)
 	dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)

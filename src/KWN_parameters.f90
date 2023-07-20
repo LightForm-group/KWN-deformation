@@ -11,5 +11,8 @@ module KWN_parameters
 
     real, parameter :: &
         ev_to_Jat = 1.602176634e-19 ! convert from ev to  J/at
+    
+    integer, parameter :: & 
+        N_elements = 2 ! TODO leave that flexible
 
 end module KWN_parameters

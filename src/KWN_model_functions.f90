@@ -132,16 +132,16 @@ function calculate_yield_stress(mu,dislocation_density,dst,prm,en)
     !calculate yield stress
        
         tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
-        print*, 'tau_s', tau_s*1e-6
-        print*, 'sum c', sum(dst%c_matrix(:,en))
+        print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'
+        !print*, 'sum c', sum(dst%c_matrix(:,en))
     !Taylor relation for dislocation contribution
         tau_d=0.3*mu*prm%burgers*sqrt(dislocation_density)
-        print*, 'tau_d', tau_d*1e-6
+        print*, 'Dislocation contribution', tau_d*1e-6, 'MPa'
     !precipitate contribution to yield stress
     !expression only valid if all precipitates are sheared - if not, use an expression depending on the whole distribution
         tau_p=mu*sqrt(3.0_pReal/2.0_pReal/PI*dst%precipitate_volume_frac(en))* &
                         prm%k_p*sqrt(dst%avg_precipitate_radius(en)/prm%transition_radius)
-        print*, 'tau_p', tau_p*1e-6
+        print*, 'Precipitate contribution', tau_p*1e-6, 'MPa'
         calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
       !  print*, 'Yield stress function:', calculate_yield_stress*1e-6, 'MPa'
 end function calculate_yield_stress

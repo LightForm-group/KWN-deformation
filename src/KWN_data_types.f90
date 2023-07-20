@@ -37,7 +37,6 @@ module KWN_data_types
                 ! option 1 - use a sinepower law that depends on temperature and strain rate for the flow stress, that is then taken as constant during deformation
                 sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]
                 A, &  ! constant in the sinepowerlaw for flow stress  [/s]
-                incubation, & ! incubation prefactor either 0 or 1
                 Q_stress, &  ! activation energy in the sinepowerlaw for flow stress [J/mol]
                 n, & ! stress exponent in the sinepower law for flow stress
                 ! option 2 - use an expression for the flow stress that accounts for solid solution hardening, precipitation and dislocations
@@ -53,8 +52,9 @@ module KWN_data_types
                 ceq_precipitate, &      ! equilibrium precipitate composition in mol fraction : [Mg, Zn]
                 diffusion0, &           ! solute diffusivity in m^2/s : [Mg, Zn] - in the present version of the code - the diffusion coefficient is taken as identical for both solute and equal to the slowest diffuser (Mg)
                 migration_energy        !  solute migration energy in J/at
-
-
+        integer, dimension(:), allocatable :: &
+                stoechiometry
+                
         real(pReal), dimension(:),   allocatable :: &
                 bins                    ! Bins for class sizes in KWN model
             character(len=15), allocatable, dimension(:) :: &
