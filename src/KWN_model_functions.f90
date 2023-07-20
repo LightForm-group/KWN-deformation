@@ -1,7 +1,7 @@
 module KWN_model_functions
 
     use KWN_parameters
-    use KWN_data_types, only: tParameters, tKwnpowerlawMicrostructure
+    use KWN_data_types, only: tParameters, tKwnpowerlawMicrostructure, tKwnpowerlawState
 
 
 contains
@@ -59,14 +59,11 @@ function calculate_binary_alloy_critical_radius(dst, prm, en)
 end function calculate_binary_alloy_critical_radius
 
 
-function calculate_beta_star(radius_crit, lattice_param, &
-                              diffusion_coefficient, c_matrix, en)
+function calculate_beta_star(radius_crit, lattice_param, en, dst)
     !! Function for calculating beta_star for binary or ternary mixtures.
     real(pReal), intent(in) :: radius_crit
     real(pReal), intent(in) :: lattice_param
-    real(pReal), dimension(:), allocatable, intent(in) ::   &
-        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
-    real(pReal), dimension(:,:), allocatable, intent(in) :: c_matrix
+    type(tKwnpowerlawMicrostructure), intent(in) :: dst
     integer, intent(in) :: en
     
     real(pReal) :: calculate_beta_star
@@ -77,15 +74,15 @@ function calculate_beta_star(radius_crit, lattice_param, &
     !      all calculations. 
 
     ! expression of beta star for ternary alloys
-    if (c_matrix(2,en) > 0) then
+    if (dst%c_matrix(2,en) > 0) then
         calculate_beta_star = 4.0_pReal * PI &
                     * radius_crit ** 2.0 / (lattice_param ** 4.0) &
-                    * 1 / ( sum( 1 / (diffusion_coefficient(:) * c_matrix(:,en)) ) )
+                    * 1 / ( sum( 1 / (dst%diffusion_coefficient(:,en) * dst%c_matrix(:,en)) ) )
     ! expression of beta star for binary alloys
     else
         calculate_beta_star = 4.0_pReal * PI &
                     * radius_crit ** 2.0 / (lattice_param ** 4.0) &
-                    * 1 / ( ( 1 / (diffusion_coefficient(1) * c_matrix(1,en)) ) )
+                    * 1 / ( ( 1 / (dst%diffusion_coefficient(1,en) * dst%c_matrix(1,en)) ) )
                                         
     endif
 

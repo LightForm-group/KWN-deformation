@@ -40,13 +40,7 @@ program KWN
     real(pReal) :: &
         interface_c, & !interface composition between matrix and a precipitate
         time_record_step, & ! time step for the output [s]
-        c_thermal_vacancy, & ! concentration in thermal vacancies
         incubation ! incubation prefactor either 0 or 1
-
-
-    ! the 'temp' variables are to store the previous step and adapt the time step at each iteration
-    real(pReal), dimension(:), allocatable ::   &
-        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
     real(pReal) :: &
         dt !time step for integration [s]
@@ -57,9 +51,8 @@ program KWN
 
     call initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, en, &
-                                 interface_c, time_record_step, &
-                                c_thermal_vacancy,&
-                                incubation, diffusion_coefficient, &
+                                interface_c, time_record_step, &
+                                incubation, &
                                 dt, growth_rate_array, &
                                 x_eq_interface, &
                                 filesuffix, testfolder &
@@ -70,8 +63,7 @@ program KWN
     call run_model(prm, dot, stt, dst, &
                    Nmembers, en, &
                    interface_c, time_record_step, &
-                   c_thermal_vacancy,  &
-                   incubation, diffusion_coefficient, &
+                   incubation, &
                    dt, growth_rate_array, &
                    x_eq_interface, &
                    filesuffix, testfolder &

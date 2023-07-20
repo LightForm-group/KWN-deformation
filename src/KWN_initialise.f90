@@ -11,8 +11,7 @@ contains
 subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers,  en, &
                                 interface_c, time_record_step, &
-                                c_thermal_vacancy, &
-                                incubation, diffusion_coefficient, &
+                                incubation, &
                                 dt, growth_rate_array, &
                                 x_eq_interface, &
                                 filesuffix, testfolder &
@@ -36,12 +35,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     real(pReal), intent(out) :: &
         interface_c, & !interface composition between matrix and a precipitate
         time_record_step, & ! time step for the output [s]
-        c_thermal_vacancy, & ! concentration in thermal vacancies
         incubation
     
-
-    real(pReal), dimension(:), allocatable, intent(out) ::   &
-        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
     real(pReal), intent(out) :: &
         dt  !time step for integration [s]
@@ -107,6 +102,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(dst%precipitate_volume_frac  (Nmembers), source=0.0_pReal)
     ! size of the array = number of considered elements
     allocate(dst%c_matrix                 (N_elements,Nmembers), source=0.0_pReal)
+    allocate(dst%diffusion_coefficient     (N_elements,Nmembers), source=0.0_pReal)
 
     ! size of these arrays: number of bins
     allocate(prm%bins(0:prm%kwn_nSteps), source=0.0_pReal)
@@ -133,7 +129,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     prm%ceq_precipitate = real(prm%stoechiometry(1:2)) / real(sum(prm%stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
 
       !calculate initial diffusion coefficient
-    diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / prm%Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
+    dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / prm%Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
                             !   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)  ! include pipe diffusion
 
 
@@ -141,7 +137,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     if (prm%entropy>0.0_pReal) then
 		call 			equilibrium_flat_interface(prm%Temperature,  N_elements,  prm%stoechiometry, &
 												   prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-												   diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+												   dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
 	endif
 
 
@@ -296,7 +292,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
     call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
                                 prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-                                R, x_eq_interface, diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+                                R, x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
     !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
     ! calculate critical radius in the case of a binary alloy
@@ -307,7 +303,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !calculate the initial growth rate of precipitates of all sizes
     call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, &
                             na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
-                            dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, &
+                            dot%precipitate_density(:,en), nucleation_rate,  dst%diffusion_coefficient, &
                             dst%c_matrix(:,en), growth_rate_array,stt%radius_crit )
 
 
@@ -316,7 +312,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
    print*, 'Critical radius:', stt%radius_crit*1.0e9, ' nm'
 
 
-    c_thermal_vacancy = 1.0
+    stt%c_thermal_vacancy = 1.0
     production_rate = 0.0
     annihilation_rate = 0.0
 
@@ -338,7 +334,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     
     print*, 'Writing outputs'
 
-    call output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
+    call output_results(testfolder, filesuffix, stt, dst,  &
                         nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
                          en)
     print*, 'End initialisation'
@@ -425,6 +421,14 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
     open(1, file = filename, ACTION="write", STATUS="replace")
         write(1,*) '# Time [s], dislocation density [/m^2]'
     close(1)
+
+    ! record calculated flow stress
+    filename = 'results/stress_'
+    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    open(1, file = filename, ACTION="write", STATUS="replace")
+        write(1,*) '# Time [s], Stress [Pa]'
+    close(1)
+
 
     ! this file will be used to store most of the results
     filename = 'results/kinetics_data_'

@@ -72,8 +72,10 @@ module KWN_data_types
                 c_vacancy, & ! concentration in excess vacancy
                 time, & ! time [s]
                 yield_stress ! yield stress [MPa]
+                
         real(pReal) :: &
-                radius_crit
+                radius_crit, &
+                c_thermal_vacancy ! equilibrium concentration of vacancies
     end type tKwnpowerlawState
 
 
@@ -83,7 +85,10 @@ module KWN_data_types
                 avg_precipitate_radius, &
                 precipitate_volume_frac
 
-        real(pReal), dimension(:,:), allocatable :: c_matrix
+        real(pReal), dimension(:,:), allocatable :: &
+                c_matrix, &
+                diffusion_coefficient
+                
      end type tKwnpowerlawMicrostructure
     
 

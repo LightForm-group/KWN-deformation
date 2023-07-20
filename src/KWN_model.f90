@@ -14,8 +14,7 @@ contains
 subroutine run_model(prm, dot, stt, dst, &
                     Nmembers, en, &
                     interface_c, time_record_step, &
-                    c_thermal_vacancy,&
-                    incubation, diffusion_coefficient, &
+                    incubation, &
                     dt, growth_rate_array, &
                     x_eq_interface, &
                     filesuffix, testfolder &
@@ -41,11 +40,7 @@ subroutine run_model(prm, dot, stt, dst, &
         time_record_step, & ! time step for the output [s]
         incubation  ! incubation prefactor either 0 or 1
 
-    real(pReal), intent(inout) :: &
-        c_thermal_vacancy ! concentration in thermal vacancies
 
-    real(pReal), dimension(:), allocatable, intent(inout) ::   &
-        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
 
     real(pReal), intent(inout) :: &
@@ -82,6 +77,7 @@ subroutine run_model(prm, dot, stt, dst, &
     ! the 'temp' variables are to store the previous step and adapt the time step at each iteration
     real(pReal), dimension(:), allocatable ::   &
         temp_c_matrix, &
+        temp_diffusion_coefficient, &
         temp_x_eq_interface, &
         temp_x_eq_matrix, &
         temp_precipitate_density ,&
@@ -94,7 +90,6 @@ subroutine run_model(prm, dot, stt, dst, &
         temp_precipitate_volume_frac, &
         temp_radius_crit, &
         temp_c_vacancy, &
-        temp_diffusion_coefficient, &
         temp_dislocation_density, &
         dt_temp, &
         Temperature_temp, &
@@ -115,11 +110,12 @@ subroutine run_model(prm, dot, stt, dst, &
     allocate(temp_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
     allocate(temp_dot_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
     allocate(temp_c_matrix(N_elements), source=0.0_pReal)
+    allocate(temp_diffusion_coefficient(N_elements), source=0.0_pReal)
     allocate(temp_x_eq_matrix(N_elements), source=0.0_pReal)
     allocate(results(1,8)) ! the results are stored in this array
 
     !the following are used to store the outputs from the previous iteration
-    temp_diffusion_coefficient = diffusion_coefficient(en)
+    temp_diffusion_coefficient(:) = dst%diffusion_coefficient(:,en)
     temp_total_precipitate_density = dst%total_precipitate_density(en)
     temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
     temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)
@@ -152,7 +148,7 @@ subroutine run_model(prm, dot, stt, dst, &
         
         
         call set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
-                                          diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
+                                           dislocation_density, &
                                           production_rate, annihilation_rate)
                                           
 
@@ -166,7 +162,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         ! expression of beta star for all alloys
         beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
-                                        diffusion_coefficient, dst%c_matrix, en)
+                                         en, dst)
 
         !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
         !TODO: Doug: I think this should be calculated before beta_star in each timestep,
@@ -184,9 +180,10 @@ subroutine run_model(prm, dot, stt, dst, &
         ! print*, 'Incubation time', incubation_time
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   prm%gamma_coherent, stt%radius_crit, prm%Temperature, incubation_time, &
-                                   stt%time, en)
+            nucleation_rate = calculate_nucleation_rate(prm, stt, &
+                                    nucleation_site_density, zeldovich_factor, beta_star, &
+                                    incubation_time, &
+                                    en)
             print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
         else
             nucleation_rate = 0.0_pReal
@@ -198,7 +195,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                     x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                     stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
-                                    diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
 
 
         ! empty the first bin to avoid precipitate accumulation
@@ -226,7 +223,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,&
-                                diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
 
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
         zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature) ) &
@@ -234,14 +231,15 @@ subroutine run_model(prm, dot, stt, dst, &
 
         ! expression of beta star for all alloys
         beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
-                                        diffusion_coefficient, dst%c_matrix, en)
+                                         en, dst)
 
         incubation_time = incubation * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   incubation_time, &
-                                   en)
+            nucleation_rate = calculate_nucleation_rate(prm, stt, &
+                                    nucleation_site_density, zeldovich_factor, beta_star, &
+                                    incubation_time, &
+                                    en)
         else
             nucleation_rate = 0.0_pReal
         endif
@@ -251,7 +249,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  dst%diffusion_coefficient(:,en), &
                                 dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
 
 
@@ -269,7 +267,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
-                                diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
 
         ! empty the first bin to avoid precipitate accumulation
         !dot%precipitate_density(0,en) = 0.0_pReal
@@ -289,7 +287,7 @@ subroutine run_model(prm, dot, stt, dst, &
         
         ! expression of beta star for all alloys
         beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
-                                        diffusion_coefficient, dst%c_matrix, en)
+                                         en, dst)
 
         incubation_time =  incubation * 2.0 / ( PI * zeldovich_factor**2 * beta_star )
 
@@ -298,9 +296,10 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   incubation_time, &
-                                   en)
+            nucleation_rate = calculate_nucleation_rate(prm, stt, &
+                                    nucleation_site_density, zeldovich_factor, beta_star, &
+                                    incubation_time, &
+                                    en)
         else
                 nucleation_rate = 0.0_pReal
         endif
@@ -310,7 +309,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  &
-                                diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
 
 
 
@@ -410,7 +409,7 @@ subroutine run_model(prm, dot, stt, dst, &
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 
 
-                call output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
+                call output_results(testfolder, filesuffix, stt, dst, &
                                     nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
                                      en)
 

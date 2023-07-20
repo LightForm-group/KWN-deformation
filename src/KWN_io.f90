@@ -212,18 +212,15 @@ subroutine read_configuration( &
 end subroutine read_configuration
 
 
-subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
+subroutine output_results(testfolder, filesuffix, stt, dst, &
                         nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
                          en)
 
     type(tKwnpowerlawState), intent(in) :: stt
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
 
-    real(pReal), dimension(:), allocatable, intent(in) ::   &
-        diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
     real(pReal), intent(in) :: &
-        c_thermal_vacancy, & ! concentration in thermal vacancies
         production_rate, & ! production rate for excess vacancies
         annihilation_rate, & !annihilation rate for excess vacancies
         nucleation_rate, & ! part/m^3/s
@@ -284,7 +281,7 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
 
     open(1, file = filename,  ACTION="write", position="append")
-        write(1, 601) stt%time(en), diffusion_coefficient(1)
+        write(1, 601) stt%time(en), dst%diffusion_coefficient(1,en)
     close(1)
 
     filename = 'results/stress_'
@@ -298,8 +295,8 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
     filename = 'results/vacancies_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
     open(1, file = filename,  ACTION="write", position="append")
-        write(1, 1001) stt%time(en), stt%c_vacancy(en)/c_thermal_vacancy, &
-                       production_rate/c_thermal_vacancy, annihilation_rate/c_thermal_vacancy
+        write(1, 1001) stt%time(en), stt%c_vacancy(en)/stt%c_thermal_vacancy, &
+                       production_rate/stt%c_thermal_vacancy, annihilation_rate/stt%c_thermal_vacancy
     close(1)
 
     filename = 'results/dislocation_density_'
