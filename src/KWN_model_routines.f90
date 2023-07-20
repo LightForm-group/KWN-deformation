@@ -8,7 +8,7 @@ module KWN_model_routines
 contains
 
 
-subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, en, &
+subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
                                           diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
                                           production_rate, annihilation_rate)
 
@@ -17,7 +17,6 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, e
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
     type(tKwnpowerlawState), intent(inout) :: dot, stt
     real(pReal), intent(in) :: &
-        Temperature, & !temperature in K
         dt !time step for integration [s]
     integer, intent(in) :: en
 
@@ -37,8 +36,8 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, e
         strain !macroscopic strain
     
 
-	diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / (Temperature * kb) )
-	mu = calculate_shear_modulus(Temperature)
+	diffusion_coefficient = prm%diffusion0 * exp( -(prm%migration_energy) / (prm%Temperature * kb) )
+	mu = calculate_shear_modulus(prm%Temperature)
 
 
 	! if there is deformation, calculate the vacancy related parameters
@@ -46,12 +45,12 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, e
     ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
     ! otherwise; use the asinh function for the flow stress 
     if(prm%k_p>0.0_pReal) then
-	    stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
+	    stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(prm%Temperature),dislocation_density,dst,prm,en)
     else    
-        stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * Temperature) )) ** (1/prm%n))
+        stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))
     endif
-    c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * Temperature) )
-	c_j = exp(-prm%jog_formation_energy / (kB * Temperature) )
+    c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * prm%Temperature) )
+	c_j = exp(-prm%jog_formation_energy / (kB * prm%Temperature) )
 	strain = prm%strain_rate * stt%time(en)
 	dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
 
@@ -60,7 +59,7 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, e
 							 / prm%vacancy_energy &
 						+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
-	annihilation_rate = prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * Temperature) ) &
+	annihilation_rate = prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * prm%Temperature) ) &
 						* ( dislocation_density / prm%dislocation_arrangement**2 &
 							+ 1.0 / prm%vacancy_sink_spacing**2 ) &
 						* stt%c_vacancy(en)
@@ -75,7 +74,7 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, e
 
 	!update the diffusion coefficient as a function of the vacancy concentration
 	! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
-	diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / (Temperature * kb) ) &
+	diffusion_coefficient = prm%diffusion0 * exp( -prm%migration_energy / (prm%Temperature * kb) ) &
 							* (1.0 + stt%c_vacancy(en) / c_thermal_vacancy )! &
 						!   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
 						!   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)

@@ -21,11 +21,12 @@ module KWN_data_types
                 vacancy_migration_energy, & ! solute migration energy in J/at
                 vacancy_diffusion0, &   ! vacancy diffusivity in m^2/s
                 mean_radius_initial,&  ! average radius initial distribution in meters
-                standard_deviation,& ! standard deviation initial distribution (log normal law assumed)
+                shape_parameter,& ! shape_parameter*mean_radius=standard deviation initial distribution (log normal law assumed)
                 volume_fraction_initial, &! initial total precipitate distribution
                 rho_0, & !initial dislocation density
                 rho_s, & !saturation dislocation density
                 strain_rate, & ! strain rate in /s
+                Temperature, &
                 total_time, & ! heat treatment time for the simulation in s
                 dislocation_arrangement, & ! constant related to the dislocation density in the vacancy annihilation term, cf [1]
                 burgers, & !matrice burgers vector
@@ -44,8 +45,8 @@ module KWN_data_types
                 k_s, & !constant parameter in regard to solute strength
                 k_p, & !constant parameter in regard to precipitate strength
                 transition_radius, & ! Transition radius between bypassing and shearing
-                M ! Taylor Factor
-
+                M,& ! Taylor Factor
+                dt_max ! max time step for numerical integration
         ! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
         real(pReal), dimension(:), allocatable :: &
                 c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -65,7 +66,8 @@ module KWN_data_types
 
     type :: tKwnpowerlawState
         real(pReal), pointer, dimension(:,:) :: &
-                precipitate_density ! table with precipitate density number in each class size [/m^4]
+                precipitate_density, & ! table with precipitate density number in each class size [/m^4]
+                normalized_distribution_function ! table with probability distribution for precipitates in each bin class size 
         real(pReal),  dimension(  :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
                 time, & ! time [s]

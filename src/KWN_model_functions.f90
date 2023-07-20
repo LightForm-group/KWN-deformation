@@ -39,10 +39,9 @@ function calculate_dislocation_density(rho_0, rho_s, strain)
 end function calculate_dislocation_density
 
 
-function calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
+function calculate_binary_alloy_critical_radius(dst, prm, en)
     implicit none
     ! calculate the critical radius for binary alloys
-    real(pReal), intent(in) :: Temperature !temperature in K
     type(tParameters), intent(in) :: prm
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
     integer, intent(in) :: en
@@ -50,7 +49,7 @@ function calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
     real(pReal) :: calculate_binary_alloy_critical_radius
     
     ! SAM: Added method to calculate the  explicitly
-    deltaGv = -R * Temperature &
+    deltaGv = -R * prm%Temperature &
                  * log( dst%c_matrix(1,en) / prm%ceq_matrix(1) ) &
                  / prm%molar_volume & 
               + prm%misfit_energy

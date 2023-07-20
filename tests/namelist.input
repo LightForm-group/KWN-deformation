@@ -1,5 +1,5 @@
 &config
-testfolder = 'test_1' 
+testfolder = 'test_aluminium_deform_yield_stress' 
 kwn_step0 = -9.300e+00 
 kwn_stepsize = 1.000e-02 
 kwn_nsteps = 100 

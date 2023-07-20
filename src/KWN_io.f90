@@ -9,9 +9,6 @@ contains
 subroutine read_configuration( &
                             testfolder, &
                             prm, &
-                            Temperature, &
-                            shape_parameter, &  ! the initial distribution is defined by mean radius, volume fraction and shape parameter of a log normal distribution - see e.g. ref [4]
-                            dt_max, &  ![s]
                             time_record_step, &  ![s]
                             incubation  & !incubation prefactor, either 0 or 1)
                             )
@@ -22,9 +19,6 @@ subroutine read_configuration( &
     character*100, intent(out) :: testfolder
     type(tParameters), intent(inout) :: prm
     real(pReal), intent(out) :: &
-        Temperature, &
-        shape_parameter, &
-        dt_max, &
         time_record_step, &
         incubation
         
@@ -49,9 +43,11 @@ subroutine read_configuration( &
 			vacancy_diffusion0, &   ! vacancy diffusivity in m^2/s
 			mean_radius_initial,&  ! average radius initial distribution in meters
 			volume_fraction_initial, &! initial total precipitate distribution
+            shape_parameter, &
 			rho_0, & !initial dislocation density
 			rho_s, & !saturation dislocation density
 			strain_rate, & ! strain rate in /s
+            Temperature, &
             total_time, & !total heat treatment time for the simulation
 			dislocation_arrangement, & ! constant related to the dislocation density in the vacancy annihilation term, cf [1]
 			burgers, & !matrice burgers vector
@@ -68,7 +64,8 @@ subroutine read_configuration( &
             k_s, & !constant parameter in regard to solute strength
             k_p, & !constant parameter in regard to precipitate strength
             transition_radius, & ! Transition radius between bypassing and shearing
-            M ! Taylor Factor
+            M, & ! Taylor Factor
+            dt_max 
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
 			c0_matrix, &            ! initial matrix solute composition in mol fraction : [Mg, Zn]
@@ -134,14 +131,14 @@ subroutine read_configuration( &
     ! activation energy for pipe diffusion - not considered so far but might be useful in the future
     q_dislocation = 1.083e+05 
 
-    ! if noting is said about the initial precipitation state, consider there are no precipitates
+    ! if nothing is said about the initial precipitation state, consider there are no precipitates
     volume_fraction_initial=0.0_pReal
     mean_radius_initial=0.0_pReal
     shape_parameter = 2.0000e-01 
     ! no elastic strain energy specified ==> considered as negligible
     misfit_energy=0.0_pReal
-
-
+    ! default value for max time step for integration
+    dt_max=0.5
 
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
@@ -177,9 +174,11 @@ subroutine read_configuration( &
     prm%vacancy_diffusion0 = vacancy_diffusion0
     prm%mean_radius_initial = mean_radius_initial
     prm%volume_fraction_initial = volume_fraction_initial
+    prm%shape_parameter = shape_parameter ! mean_radius*shape_parameter= standard devitation
     prm%rho_0 = rho_0
     prm%rho_s = rho_s
     prm%strain_rate = strain_rate
+    prm%Temperature=Temperature
     prm%dislocation_arrangement = dislocation_arrangement
     prm%burgers = burgers
     prm%jog_formation_energy = jog_formation_energy
@@ -200,7 +199,7 @@ subroutine read_configuration( &
     prm%transition_radius=transition_radius
     prm%stoechiometry=stoechiometry
     prm%total_time=total_time ! heat treatment time for the simulation 
-
+    prm%dt_max=dt_max
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
      !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
@@ -287,6 +286,14 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
     open(1, file = filename,  ACTION="write", position="append")
         write(1, 601) stt%time(en), diffusion_coefficient(1)
     close(1)
+
+    filename = 'results/stress_'
+    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+
+    open(1, file = filename,  ACTION="write", position="append")
+        write(1, 601) stt%time(en), stt%yield_stress(en)
+    close(1)
+
 
     filename = 'results/vacancies_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)

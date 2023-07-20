@@ -13,11 +13,10 @@ contains
 
 subroutine run_model(prm, dot, stt, dst, &
                     Nmembers, en, &
-                    normalized_distribution_function, &
-                    Temperature, radius_crit, interface_c, time_record_step, &
-                    c_thermal_vacancy, shape_parameter, &
+                    radius_crit, interface_c, time_record_step, &
+                    c_thermal_vacancy,&
                     incubation, diffusion_coefficient, &
-                    dt, dt_max, growth_rate_array, &
+                    dt, growth_rate_array, &
                     x_eq_interface, &
                     filesuffix, testfolder &
                     )
@@ -33,9 +32,6 @@ subroutine run_model(prm, dot, stt, dst, &
         en
 
     
-
-    real(pReal), dimension(:,:), allocatable, intent(in) :: &
-        normalized_distribution_function !normalised distribution for the precipitate size
     real(pReal), dimension(:), allocatable, intent(inout) :: &
         growth_rate_array, & !array that contains the precipitate growth rate of each bin
         x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
@@ -43,19 +39,15 @@ subroutine run_model(prm, dot, stt, dst, &
     real(pReal), intent(in) :: &
         interface_c, & !interface composition between matrix and a precipitate
         time_record_step, & ! time step for the output [s]
-        shape_parameter, & !shape parameter in the log normal distribution of the precipitates - ref [4]
         incubation  ! incubation prefactor either 0 or 1
 
     real(pReal), intent(inout) :: &
-        Temperature, & !temperature in K
         c_thermal_vacancy, & ! concentration in thermal vacancies
         radius_crit !critical radius, [m]
 
     real(pReal), dimension(:), allocatable, intent(inout) ::   &
         diffusion_coefficient  ! diffusion coefficient for Mg and Zn
 
-    real(pReal), intent(in) :: &
-        dt_max ! max time step for integration [s]
 
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
@@ -140,7 +132,7 @@ subroutine run_model(prm, dot, stt, dst, &
     temp_x_eq_interface = x_eq_interface
     temp_c_vacancy = stt%c_vacancy(en)
     temp_dislocation_density = prm%rho_0
-    Temperature_temp = Temperature
+    Temperature_temp = prm%Temperature
     stt%time(en) = 0.0_pReal
     ! time_record is used to record the results in textfiles
     time_record = -dt
@@ -156,11 +148,11 @@ subroutine run_model(prm, dot, stt, dst, &
         ! print*, "dt:", dt
         print*, ' '
         print*, 'Time:', stt%time(en)
-        print*, 'Temperature', Temperature
+        print*, 'Temperature', prm%Temperature
         print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
         
         
-        call set_initial_timestep_constants(prm, stt, dst, dot, Temperature, dt, en, &
+        call set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
                                           diffusion_coefficient, c_thermal_vacancy, dislocation_density, &
                                           production_rate, annihilation_rate)
                                           
@@ -169,7 +161,7 @@ subroutine run_model(prm, dot, stt, dst, &
         ! calculate nucleation rate
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
 
-        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * Temperature ) ) &
+        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature ) ) &
                                                    / ( 2.0_pReal * PI * radius_crit**2.0 )
 
 
@@ -184,7 +176,7 @@ subroutine run_model(prm, dot, stt, dst, &
         !             different strain rates early in the simulation)
         ! calculate critical radius in the case of a binary alloy
         if (dst%c_matrix(2,en)==0) then
-            radius_crit = calculate_binary_alloy_critical_radius(Temperature, dst, prm, en)
+            radius_crit = calculate_binary_alloy_critical_radius( dst, prm, en)
         end if
 
 
@@ -194,7 +186,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         if (stt%time(en) > 0.0_pReal) then
             nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
+                                   prm%gamma_coherent, radius_crit, prm%Temperature, incubation_time, &
                                    stt%time, en)
             print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
         else
@@ -238,7 +230,7 @@ subroutine run_model(prm, dot, stt, dst, &
                                 diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, radius_crit )
 
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
-        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * Temperature) ) &
+        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature) ) &
                             / (2.0_pReal * PI * radius_crit**2.0)
 
         ! expression of beta star for all alloys
@@ -249,7 +241,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         if (stt%time(en) > 0.0_pReal) then
             nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
+                                   prm%gamma_coherent, radius_crit, prm%Temperature, incubation_time, &
                                    stt%time, en)
         else
             nucleation_rate = 0.0_pReal
@@ -293,7 +285,7 @@ subroutine run_model(prm, dot, stt, dst, &
         stt%time(en) = stt%time(en) + h / 2.0
 
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
-        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / (kB * Temperature)) &
+        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / (kB * prm%Temperature)) &
                         / ( 2.0_pReal * PI * radius_crit**2.0 )
         
         ! expression of beta star for all alloys
@@ -308,7 +300,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         if (stt%time(en) > 0.0_pReal) then
                 nucleation_rate = calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   prm%gamma_coherent, radius_crit, Temperature, incubation_time, &
+                                   prm%gamma_coherent, radius_crit, prm%Temperature, incubation_time, &
                                    stt%time, en)
         else
                 nucleation_rate = 0.0_pReal
@@ -350,10 +342,10 @@ subroutine run_model(prm, dot, stt, dst, &
         
             
 
-        ! Adapt time step so that the outputs do not vary to much between too time steps
+        ! Adapt time step so that the outputs do not vary too much between two time steps
         !if  either:
         !    - the precipitate distribution in one class/ the vacancy concentration / the concentration in the matrix becomes negative,
-        ! or - at least one size of precipitates grow sufficiently fast to move from two size classes during one time step
+        ! or - the growth rate is sufficiently fast for some precipitates to be able to jump from two size classes or more during one time step
         ! then go back to the previous step and decrease the time step
 
 
@@ -373,7 +365,7 @@ subroutine run_model(prm, dot, stt, dst, &
             dst%c_matrix(:,en) = temp_c_matrix
             !stt%c_vacancy(en) = temp_c_vacancy
             !dislocation_density = temp_dislocation_density
-            Temperature = Temperature_temp
+            prm%Temperature = Temperature_temp
             !radius_crit = temp_radius_crit
             prm%ceq_matrix = temp_x_eq_matrix
             x_eq_interface = temp_x_eq_interface
@@ -389,13 +381,13 @@ subroutine run_model(prm, dot, stt, dst, &
             !not necessary to adapt the time step to the growth rate if there is no precipitate
             if ( dst%total_precipitate_density(en) > 1.0_pReal ) then
 
-                dt = min( dt_max, &
+                dt = min( prm%dt_max, &
                           (prm%bins(1)-prm%bins(0)) / maxval(abs(growth_rate_array)) &
                         )
                 ! print*,'dt growth rate', (prm%bins(1) - prm%bins(0)) / maxval(abs(growth_rate_array))
 
             else
-                dt = min(dt_max, dt*1.2) !increase slightly the time step by an arbitrary factor as long as there are no precipitates
+                dt = min(prm%dt_max, dt*1.2) !increase slightly the time step by an arbitrary factor as long as there are no precipitates
             endif
 
 
@@ -411,7 +403,7 @@ subroutine run_model(prm, dot, stt, dst, &
             temp_x_eq_interface = x_eq_interface
             !temp_c_vacancy = stt%c_vacancy(en)
             !temp_dislocation_density = dislocation_density
-            Temperature_temp = Temperature
+            Temperature_temp = prm%Temperature
             !temp_diffusion_coefficient = diffusion_coefficient(1)
             !stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
             print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
