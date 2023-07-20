@@ -92,18 +92,16 @@ function calculate_beta_star(radius_crit, lattice_param, &
 end function calculate_beta_star
 
 
-function calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, beta_star, &
-                                   gamma_coherent, radius_crit, Temperature, incubation_time, &
-                                   time, en)
+function calculate_nucleation_rate(prm, stt, nucleation_site_density, zeldovich_factor, beta_star, &
+                                  incubation_time, &
+                                   en)
+    type(tKwnpowerlawState), intent(in) :: stt
+    type(tParameters), intent(in) :: prm
     real(pReal), intent(in) :: &
         nucleation_site_density, & !nucleation density [pr/m^3]
         zeldovich_factor, & !Zeldovich factor
         beta_star, & ! in the nucleation rate expression
-        gamma_coherent, &       ! coherent precipitate surface energy in J/m^2
-        radius_crit, &
-        Temperature, & !temperature in K
         incubation_time ! in the nucleation rate expression
-	real(pReal),  dimension(:), allocatable, intent(in) :: time ! time [s]
     integer, intent(in) :: en
 
     real(pReal) :: calculate_nucleation_rate
@@ -111,9 +109,9 @@ function calculate_nucleation_rate(nucleation_site_density, zeldovich_factor, be
 
     calculate_nucleation_rate = nucleation_site_density * zeldovich_factor * beta_star &
                                 * exp( &
-                                  - 4.0_pReal * PI * gamma_coherent * radius_crit ** 2.0 &
-                                     / ( 3.0_pReal * kB * Temperature ) &
-                                  - incubation_time / time(en) &
+                                  - 4.0_pReal * PI * prm%gamma_coherent * stt%radius_crit ** 2.0 &
+                                     / ( 3.0_pReal * kB * prm%Temperature ) &
+                                  - incubation_time / stt%time(en) &
                                   )
 
 end function calculate_nucleation_rate

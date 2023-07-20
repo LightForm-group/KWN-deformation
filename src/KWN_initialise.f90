@@ -10,7 +10,7 @@ contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers,  en, &
-                                radius_crit, interface_c, time_record_step, &
+                                interface_c, time_record_step, &
                                 c_thermal_vacancy, &
                                 incubation, diffusion_coefficient, &
                                 dt, growth_rate_array, &
@@ -34,7 +34,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
     real(pReal), intent(out) :: &
-        radius_crit, & !critical radius, [m]
         interface_c, & !interface composition between matrix and a precipitate
         time_record_step, & ! time step for the output [s]
         c_thermal_vacancy, & ! concentration in thermal vacancies
@@ -302,19 +301,19 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
     ! calculate critical radius in the case of a binary alloy
     if (dst%c_matrix(2,en)==0) then
-        radius_crit = calculate_binary_alloy_critical_radius(dst, prm, en)
+        stt%radius_crit = calculate_binary_alloy_critical_radius(dst, prm, en)
     end if
 
     !calculate the initial growth rate of precipitates of all sizes
     call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, &
                             na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
                             dot%precipitate_density(:,en), nucleation_rate,  diffusion_coefficient, &
-                            dst%c_matrix(:,en), growth_rate_array, radius_crit )
+                            dst%c_matrix(:,en), growth_rate_array,stt%radius_crit )
 
 
     !the critical radius for dissolution if calculated from the precipitate growth rate array - display it
    print*, ''
-   print*, 'Critical radius:', radius_crit*1.0e9, ' nm'
+   print*, 'Critical radius:', stt%radius_crit*1.0e9, ' nm'
 
 
     c_thermal_vacancy = 1.0
@@ -332,7 +331,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'Initialising outputs'
     
 
-    call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
+    call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate,  &
                                 dt, growth_rate_array, &
                                mean_particle_strength, &
                                time_record_step, x_eq_interface, en)
@@ -341,13 +340,13 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     call output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
                         nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
-                        radius_crit, en)
+                         en)
     print*, 'End initialisation'
 
 end subroutine initialise_model_state
 
 
-subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, radius_crit, &
+subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, &
                                dt, growth_rate_array, &
                                mean_particle_strength, &
                                time_record_step, x_eq_interface, en)
@@ -365,8 +364,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
         dt, & !time step for integration [s]
         time_record_step, & ! time step for the output [s]
         mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
-        nucleation_rate, & ! part/m^3/s
-        radius_crit !critical radius, [m]
+        nucleation_rate ! part/m^3/s
     
     character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
     character*100, intent(in) :: testfolder !folder where the input file is

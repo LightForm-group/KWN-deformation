@@ -214,7 +214,7 @@ end subroutine read_configuration
 
 subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficient, c_thermal_vacancy, &
                         nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
-                        radius_crit, en)
+                         en)
 
     type(tKwnpowerlawState), intent(in) :: stt
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
@@ -227,8 +227,8 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
         production_rate, & ! production rate for excess vacancies
         annihilation_rate, & !annihilation rate for excess vacancies
         nucleation_rate, & ! part/m^3/s
-        dislocation_density, & ![/m^2]
-        radius_crit !critical radius, [m]
+        dislocation_density ![/m^2]
+
     
     integer, intent(in) :: en
     
@@ -262,7 +262,7 @@ subroutine output_results(testfolder, filesuffix, stt, dst, diffusion_coefficien
     if (results(1,6)<1.0e-30_pReal) then
         results(1,6)=0.0
     endif
-    results(1,5)=radius_crit*1.0e9
+    results(1,5)=stt%radius_crit*1.0e9
 
     filename='results/kinetics_data_'
     filename=trim(testfolder)//trim(filename)//trim(filesuffix)

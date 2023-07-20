@@ -72,6 +72,8 @@ module KWN_data_types
                 c_vacancy, & ! concentration in excess vacancy
                 time, & ! time [s]
                 yield_stress ! yield stress [MPa]
+        real(pReal) :: &
+                radius_crit
     end type tKwnpowerlawState
 
 

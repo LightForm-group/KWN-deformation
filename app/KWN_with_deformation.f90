@@ -38,7 +38,6 @@ program KWN
 
 
     real(pReal) :: &
-        radius_crit, & !critical radius, [m]
         interface_c, & !interface composition between matrix and a precipitate
         time_record_step, & ! time step for the output [s]
         c_thermal_vacancy, & ! concentration in thermal vacancies
@@ -58,7 +57,7 @@ program KWN
 
     call initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, en, &
-                                radius_crit, interface_c, time_record_step, &
+                                 interface_c, time_record_step, &
                                 c_thermal_vacancy,&
                                 incubation, diffusion_coefficient, &
                                 dt, growth_rate_array, &
@@ -70,7 +69,7 @@ program KWN
 
     call run_model(prm, dot, stt, dst, &
                    Nmembers, en, &
-                   radius_crit, interface_c, time_record_step, &
+                   interface_c, time_record_step, &
                    c_thermal_vacancy,  &
                    incubation, diffusion_coefficient, &
                    dt, growth_rate_array, &
