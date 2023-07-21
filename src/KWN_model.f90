@@ -129,36 +129,13 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         ! calculate nucleation rate
-        nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
+        
 
-        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature ) ) &
-                                                   / ( 2.0_pReal * PI * stt%radius_crit**2.0 )
-
-
-        ! expression of beta star for all alloys
-        beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
-                                         en, dst)
-
-        !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
-        !TODO: Doug: I think this should be calculated before beta_star in each timestep,
-        !            in the setting of initial timestep constants
-        !            (it will converge towards the same answer either way, but with slightly
-        !             different strain rates early in the simulation)
-        ! calculate critical radius in the case of a binary alloy
-        if (dst%c_matrix(2,en)==0) then
-            stt%radius_crit = calculate_binary_alloy_critical_radius( dst, prm, en)
-        end if
-
-
-        incubation_time = REAL(prm%incubation) * 2.0 &
-                            / ( PI * zeldovich_factor**2.0 * beta_star )
         ! print*, 'Incubation time', incubation_time
 
         if (stt%time(en) > 0.0_pReal) then
             stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
-                                    nucleation_site_density, zeldovich_factor, beta_star, &
-                                    incubation_time, &
-                                    en)
+                                                            dst, en)
             !print*, 'nucleation rate', stt%nucleation_rate*1e-6, '/cm^3'
         else
             stt%nucleation_rate = 0.0_pReal
@@ -200,21 +177,11 @@ subroutine run_model(prm, dot, stt, dst, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
                                 dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
-        nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
-        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature) ) &
-                            / (2.0_pReal * PI * stt%radius_crit**2.0)
-
-        ! expression of beta star for all alloys
-        beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
-                                         en, dst)
-
-        incubation_time = REAL(prm%incubation) * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
+        
 
         if (stt%time(en) > 0.0_pReal) then
             stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
-                                    nucleation_site_density, zeldovich_factor, beta_star, &
-                                    incubation_time, &
-                                    en)
+                                                            dst, en)
         else
             stt%nucleation_rate = 0.0_pReal
         endif
@@ -256,25 +223,10 @@ subroutine run_model(prm, dot, stt, dst, &
         stt%precipitate_density(:,en) = temp_precipitate_density + h * k3
         stt%time(en) = stt%time(en) + h / 2.0
 
-        nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
-        zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / (kB * prm%Temperature)) &
-                        / ( 2.0_pReal * PI * stt%radius_crit**2.0 )
-        
-        ! expression of beta star for all alloys
-        beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
-                                         en, dst)
-
-        incubation_time =  REAL(prm%incubation) * 2.0 / ( PI * zeldovich_factor**2 * beta_star )
-
-
-
-
 
         if (stt%time(en) > 0.0_pReal) then
             stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
-                                    nucleation_site_density, zeldovich_factor, beta_star, &
-                                    incubation_time, &
-                                    en)
+                                                            dst, en)
         else
                 stt%nucleation_rate = 0.0_pReal
         endif

@@ -89,20 +89,44 @@ function calculate_beta_star(radius_crit, lattice_param, en, dst)
 end function calculate_beta_star
 
 
-function calculate_nucleation_rate(prm, stt, nucleation_site_density, zeldovich_factor, beta_star, &
-                                  incubation_time, &
+function calculate_nucleation_rate(prm, stt, dst, &
                                    en)
-    type(tKwnpowerlawState), intent(in) :: stt
+
+    type(tKwnpowerlawState), intent(inout) :: stt
     type(tParameters), intent(in) :: prm
-    real(pReal), intent(in) :: &
-        nucleation_site_density, & !nucleation density [pr/m^3]
-        zeldovich_factor, & !Zeldovich factor
-        beta_star, & ! in the nucleation rate expression
-        incubation_time ! in the nucleation rate expression
+    type(tKwnpowerlawMicrostructure), intent(in) :: dst
     integer, intent(in) :: en
+    !local variables
+    real(pReal) :: calculate_nucleation_rate,&
+                   nucleation_site_density, &
+                   zeldovich_factor, &
+                   beta_star, &
+                   incubation_time
 
-    real(pReal) :: calculate_nucleation_rate
+    zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature ) ) &
+                                                / ( 2.0_pReal * PI * stt%radius_crit**2.0 )
 
+
+    ! expression of beta star for all alloys
+    beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
+                                         en, dst)
+
+        !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
+        !TODO: Doug: I think this should be calculated before beta_star in each timestep,
+        !            in the setting of initial timestep constants
+        !            (it will converge towards the same answer either way, but with slightly
+        !             different strain rates early in the simulation)
+        ! calculate critical radius in the case of a binary alloy
+    if (dst%c_matrix(2,en)==0) then
+            stt%radius_crit = calculate_binary_alloy_critical_radius( dst, prm, en)
+    end if
+
+
+    incubation_time = REAL(prm%incubation) * 2.0 &
+                        / ( PI * zeldovich_factor**2.0 * beta_star )
+
+ 
+    nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
 
     calculate_nucleation_rate = nucleation_site_density * zeldovich_factor * beta_star &
                                 * exp( &
