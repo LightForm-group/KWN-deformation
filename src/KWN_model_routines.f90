@@ -276,19 +276,25 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
 
     ! calculate precipitate growth rate for all class sizes
     implicit none
-
+    !type(tParameters), intent(in) :: prm
+   ! type(tKwnpowerlawMicrostructure), intent(inout) :: dst
+    type(tKwnpowerlawState), intent(inout) ::  stt !, dot
 
     integer, intent(in) :: N_Steps, N_elements
-    real(pReal), intent(in), dimension(0:N_steps) :: bins, x_eq_interface
+    real(pReal), intent(in), dimension(0:N_steps) :: bins
     real(pReal), intent(in), dimension(N_steps) :: precipitate_density
     real(pReal), intent(in), dimension(N_elements) :: ceq_precipitate, diffusion_coefficient, c_matrix
     real(pReal), intent(in) :: atomic_volume,  molar_volume,  nucleation_rate
     real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density
     real(pReal), intent(inout), dimension(0:N_steps) :: growth_rate_array
     real(pReal), intent(inout)::  radius_crit
+    
+    !local variables
     real(pReal) :: radiusC, radiusL, radiusR, interface_c, growth_rate, flux
+    real(pReal), dimension(0:N_steps) ::  x_eq_interface
     integer :: bin
 
+    x_eq_interface=stt%x_eq_interface
 
 
    ! the growth rate is stored to change the time step in the main program
@@ -342,6 +348,9 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
                     
                     
                     enddo kwnbins_growth
+            
+            stt%x_eq_interface=x_eq_interface
+
 
 end subroutine growth_precipitate
 
