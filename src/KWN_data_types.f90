@@ -73,8 +73,8 @@ module KWN_data_types
 
     type :: tKwnpowerlawState
         real(pReal), pointer, dimension(:,:) :: &
-                precipitate_density, & ! table with precipitate density number in each class size [/m^4]
-                normalized_distribution_function! table with probability distribution for precipitates in each bin class size 
+                precipitate_density ! table with precipitate density number in each class size [/m^4]
+                
                 
         real(pReal),  dimension(  :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
@@ -102,6 +102,7 @@ module KWN_data_types
                 c_matrix, &
                 diffusion_coefficient
 
+       
      end type tKwnpowerlawMicrostructure
     
 

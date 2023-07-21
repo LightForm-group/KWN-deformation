@@ -29,7 +29,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
 
 
-
+    ! local
 
     integer ::  bin
     real(pReal) :: & 
@@ -40,6 +40,10 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         integral_dist_function, & ! used to calculate the initial distribution
         deltaGv, & ! chemical driving force [J/mol]
         vol_int
+    
+    real(pReal), pointer, dimension(:,:) :: &
+                normalized_distribution_function! table with probability distribution for precipitates in each bin class size 
+
 
   
     Nmembers = 1 ! Nmembers is the number of point in the simulation - here 1 as it's a single point model
@@ -77,7 +81,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(prm%bins(0:prm%kwn_nSteps), source=0.0_pReal)
     allocate(dot%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
     allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
-    allocate(stt%normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
+    allocate(normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
     allocate(stt%growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
     allocate(stt%x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
     allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
@@ -155,7 +159,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                 radiusL = prm%bins(bin-1)
                                 radiusR = prm%bins(bin  )
                                 radiusC = (radiusL+radiusR)/2
-                                stt%normalized_distribution_function(bin,en) =  1.0_pReal / sqrt(PI * 2.0_pReal) &
+                                normalized_distribution_function(bin,en) =  1.0_pReal / sqrt(PI * 2.0_pReal) &
                                                                                 / prm%shape_parameter / radiusC &
                                                                                 * exp( -1.0 / 2.0 * &
                                                                                 ( log( radiusC / prm%mean_radius_initial )&
@@ -170,14 +174,14 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         do bin = 1,prm%kwn_nSteps
             radiusL = prm%bins(bin-1)
             radiusR = prm%bins(bin  )
-            integral_dist_function = integral_dist_function + (radiusR - radiusL) * stt%normalized_distribution_function(bin,en)
+            integral_dist_function = integral_dist_function + (radiusR - radiusL) * normalized_distribution_function(bin,en)
         enddo
 
         !print*, 'integral dist', integral_dist_function
 
 
         ! normalized_distribution is not normalised yet
-        stt%normalized_distribution_function(:,en) = stt%normalized_distribution_function(:,en) / integral_dist_function
+        normalized_distribution_function(:,en) = normalized_distribution_function(:,en) / integral_dist_function
         ! now it is normalised
 
         !the normalized distribution function gives the shape of the distribution, it needs to be multiplied by the number density N0 such that the initial precipitate fraction is the one given as input
@@ -187,13 +191,13 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
             radiusL = prm%bins(bin-1)
             radiusR = prm%bins(bin  )
             radiusC = (radiusL + radiusR)/2
-            vol_int = vol_int + stt%normalized_distribution_function(bin,en) * radiusC**3 * (radiusR-RadiusL) * 4.0/3.0 * PI
+            vol_int = vol_int + normalized_distribution_function(bin,en) * radiusC**3 * (radiusR-RadiusL) * 4.0/3.0 * PI
         enddo
         !number density * total volume of precipitates = volume fraction
         N_0 = dst%precipitate_volume_frac(en) / vol_int
 
         ! now the normalised distribution function is multiplied by the total number density to get the number density per bin size [m^{-4}]
-        stt%precipitate_density(:,en) = stt%normalized_distribution_function(:,en) * N_0
+        stt%precipitate_density(:,en) = normalized_distribution_function(:,en) * N_0
         dst%total_precipitate_density(en) = N_0
 
         stt%precipitate_density(1,en) = 0
