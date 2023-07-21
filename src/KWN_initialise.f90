@@ -9,7 +9,7 @@ module KWN_initialise
 contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
-                                  prm_temp,  stt_temp, dst_temp, &
+                                  prm_temp, dot_temp, stt_temp, dst_temp, &
                                   Nmembers, en, &
                                   dt &
                                  )
@@ -17,7 +17,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     implicit none
 
     type(tParameters), intent(out) :: prm, prm_temp
-    type(tKwnpowerlawState), intent(out) ::  dot, stt, stt_temp
+    type(tKwnpowerlawState), intent(out) ::  dot, dot_temp, stt, stt_temp
     type(tKwnpowerlawMicrostructure), intent(out) :: dst, dst_temp
 
     integer, intent(out) :: &

@@ -12,7 +12,7 @@ module KWN_model
 contains
 
 subroutine run_model(prm, dot, stt, dst, &
-                    prm_temp,  stt_temp, dst_temp, &
+                    prm_temp, dot_temp,  stt_temp, dst_temp, &
                     Nmembers, en, &
                     dt &
                     )
@@ -20,7 +20,7 @@ subroutine run_model(prm, dot, stt, dst, &
     implicit none
 
     type(tParameters), intent(inout) :: prm, prm_temp
-    type(tKwnpowerlawState), intent(inout) ::  dot,  stt, stt_temp
+    type(tKwnpowerlawState), intent(inout) ::  dot, dot_temp, stt, stt_temp
     type(tKwnpowerlawMicrostructure), intent(inout) :: dst, dst_temp
     
 
@@ -52,23 +52,10 @@ subroutine run_model(prm, dot, stt, dst, &
 
     ! the 'temp' variables are to store the previous step and adapt the time step at each iteration
     real(pReal), dimension(:), allocatable ::   &
-        temp_c_matrix, &
-        temp_diffusion_coefficient, &
-        temp_x_eq_interface, &
-        temp_x_eq_matrix, &
-        temp_precipitate_density ,&
-        temp_dot_precipitate_density, &
         k1,k2,k3,k4 ! variables used for Runge Kutta integration
 
     real(pReal) :: &
-        temp_total_precipitate_density, &
-        temp_avg_precipitate_radius, &
-        temp_precipitate_volume_frac, &
-        temp_radius_crit, &
-        temp_c_vacancy, &
-        temp_dislocation_density, &
         dt_temp, &
-        Temperature_temp, &
         h !used for Runge Kutta integration
 
     INTEGER :: status ! I/O status
@@ -78,28 +65,15 @@ subroutine run_model(prm, dot, stt, dst, &
     allocate(k2(prm%kwn_nSteps), source=0.0_pReal) !
     allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
     allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
-    allocate(temp_x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal)
-    allocate(temp_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
-    allocate(temp_dot_precipitate_density(prm%kwn_nSteps), source=0.0_pReal)
-    allocate(temp_c_matrix(N_elements), source=0.0_pReal)
-    allocate(temp_diffusion_coefficient(N_elements), source=0.0_pReal)
-    allocate(temp_x_eq_matrix(N_elements), source=0.0_pReal)
     allocate(results(1,8)) ! the results are stored in this array
 
     !the following are used to store the outputs from the previous iteration
-    temp_diffusion_coefficient(:) = dst%diffusion_coefficient(:,en)
-    dst_temp%total_precipitate_density = dst%total_precipitate_density
-    temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
-    temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)
-    temp_c_matrix(:) = dst%c_matrix(:,en)
-    temp_precipitate_density = stt%precipitate_density(:,en)
-    temp_dot_precipitate_density = dot%precipitate_density(:,en)
-    temp_radius_crit = stt%radius_crit
-    temp_x_eq_matrix = prm%ceq_matrix
-    temp_x_eq_interface = stt%x_eq_interface
-    temp_c_vacancy = stt%c_vacancy(en)
-    temp_dislocation_density = prm%rho_0
-    Temperature_temp = prm%Temperature
+    ! and possibly come back to it if the time step was too high
+    dst_temp=dst
+    stt_temp=stt
+    prm_temp=prm
+    dot_temp=dot
+
     stt%time(en) = 0.0_pReal
     ! time_record is used to record the results in textfiles
     time_record = -dt
@@ -158,7 +132,7 @@ subroutine run_model(prm, dot, stt, dst, &
         k1 = dot%precipitate_density(:,en)
 
         stt%time(en) = stt%time(en) + h / 2.0
-        stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k1
+        stt%precipitate_density(:,en) =  stt_temp%precipitate_density(:,en) + h / 2.0 * k1
 
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
@@ -185,7 +159,7 @@ subroutine run_model(prm, dot, stt, dst, &
         k2 = dot%precipitate_density(:,en)
 
         ! Runge Kutta k3 calculation
-        stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k2
+        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 2.0 * k2
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
                                 stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
@@ -196,7 +170,7 @@ subroutine run_model(prm, dot, stt, dst, &
         k3 = dot%precipitate_density(:,en)
 
         ! Runge Kutta k4 calculation
-        stt%precipitate_density(:,en) = temp_precipitate_density + h * k3
+        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h * k3
         stt%time(en) = stt%time(en) + h / 2.0
 
 
@@ -219,7 +193,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         !Runge Kutta, calculate precipitate density in all bins (/m^4)
-        stt%precipitate_density(:,en) = temp_precipitate_density + h / 6.0 * (k1 + 2.0*k2 + 2.0*k3 + k4)
+        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 6.0 * (k1 + 2.0*k2 + 2.0*k3 + k4)
 
 
         ! update precipate (dst) volume frac, density, avg radius, and matrix composition
@@ -246,19 +220,11 @@ subroutine run_model(prm, dot, stt, dst, &
         ! go back one step before
 
             stt%time(en) = stt%time(en) - dt
-            dst%total_precipitate_density(en) = temp_total_precipitate_density
-            stt%precipitate_density(:,en) = temp_precipitate_density(:)
-            dot%precipitate_density(:,en) = temp_dot_precipitate_density(:)
-            dst%avg_precipitate_radius(en) = temp_avg_precipitate_radius
-            dst%precipitate_volume_frac(en) = temp_precipitate_volume_frac
-            dst%c_matrix(:,en) = temp_c_matrix
-            !stt%c_vacancy(en) = temp_c_vacancy
-            !dislocation_density = temp_dislocation_density
-            prm%Temperature = Temperature_temp
-            !radius_crit = temp_radius_crit
-            prm%ceq_matrix = temp_x_eq_matrix
-            stt%x_eq_interface = temp_x_eq_interface
-            !diffusion_coefficient(1) = temp_diffusion_coefficient
+            dst = dst_temp
+            stt = stt_temp
+            prm = prm_temp
+            dot = dot_temp
+
 
             !decrease time step by a factor arbitrarily chose (2)
             dt = 0.5 * dt
@@ -281,20 +247,11 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
             ! store the new values of the outputs in the temporary variables
-            temp_dot_precipitate_density = dot%precipitate_density(:,en)
-            dst_temp%total_precipitate_density = dst%total_precipitate_density
-            temp_precipitate_density = stt%precipitate_density(:,en)
-            temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
-            temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)
-            temp_c_matrix = dst%c_matrix(:,en)
-            !temp_radius_crit = radius_crit
-            temp_x_eq_matrix = prm%ceq_matrix
-            temp_x_eq_interface = stt%x_eq_interface
-            !temp_c_vacancy = stt%c_vacancy(en)
-            !temp_dislocation_density = dislocation_density
-            Temperature_temp = prm%Temperature
-            !temp_diffusion_coefficient = diffusion_coefficient(1)
-            !stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
+            dst_temp=dst
+            prm_temp=prm
+            stt_temp=stt
+            dot_temp=dot
+
           
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds

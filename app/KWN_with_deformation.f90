@@ -25,6 +25,7 @@ program KWN
     type(tParameters) :: prm, &
                          prm_temp
     type(tKwnpowerlawState) ::  dot, &
+                                dot_temp, &
                                 stt, &
                                 stt_temp
     type(tKwnpowerlawMicrostructure) :: dst, &
@@ -39,14 +40,14 @@ program KWN
 
 
     call initialise_model_state(prm, dot, stt, dst, &
-                                prm_temp, stt_temp, dst_temp, &
+                                prm_temp,dot_temp,  stt_temp, dst_temp, &
                                 Nmembers, en, &
                                 dt &
                                 )
 
 
     call run_model(prm, dot, stt, dst, &
-                   prm_temp, stt_temp, dst_temp, &
+                   prm_temp, dot_temp, stt_temp, dst_temp, &
                    Nmembers, en, &
                    dt  &
                    )
