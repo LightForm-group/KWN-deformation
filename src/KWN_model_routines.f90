@@ -220,6 +220,7 @@ subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometr
     real(pReal), intent(in) :: Temperature,  atomic_volume, na, molar_volume, gamma_coherent, R, volume_fraction, misfit_energy
     real(pReal), intent(inout), dimension(0:N_steps) :: x_eq_interface
     real(pReal), intent(in), dimension(0:N_steps) :: bins
+    ! local variables
     real(pReal) :: xmin, xmax, solubility_product, delta
     integer :: i
 
@@ -274,7 +275,7 @@ end subroutine interface_composition
 
 
 
-subroutine  growth_precipitate(N_elements, N_steps, bins, interface_c, &
+subroutine  growth_precipitate(N_elements, N_steps, bins,  &
             x_eq_interface,atomic_volume, na, molar_volume, ceq_precipitate, precipitate_density, &
             dot_precipitate_density, nucleation_rate, diffusion_coefficient, c_matrix, growth_rate_array , radius_crit)
 

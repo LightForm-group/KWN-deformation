@@ -80,11 +80,14 @@ module KWN_data_types
                 c_vacancy, & ! concentration in excess vacancy
                 time, & ! time [s]
                 yield_stress, & ! yield stress [MPa]
-                growth_rate_array ! table with growth rate in each bin
+                growth_rate_array, & ! table with growth rate in each bin
+                x_eq_interface ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
         
         real(pReal) :: &
                 radius_crit, &
-                c_thermal_vacancy ! equilibrium concentration of vacancies
+                c_thermal_vacancy, & ! equilibrium concentration of vacancies
+                nucleation_rate ! part/m^3/s
+
     end type tKwnpowerlawState
 
 

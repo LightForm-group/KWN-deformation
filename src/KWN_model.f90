@@ -13,9 +13,7 @@ contains
 
 subroutine run_model(prm, dot, stt, dst, &
                     Nmembers, en, &
-                    interface_c, &
-                    dt,  &
-                    x_eq_interface &
+                    dt &
                     )
 
     implicit none
@@ -29,13 +27,6 @@ subroutine run_model(prm, dot, stt, dst, &
         en
 
     
-    real(pReal), dimension(:), allocatable, intent(inout) :: &
-        x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
-
-    real(pReal), intent(in) :: &
-        interface_c !interface composition between matrix and a precipitate
-
-
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
 
@@ -49,7 +40,6 @@ subroutine run_model(prm, dot, stt, dst, &
         zeldovich_factor, & !Zeldovich factor
         beta_star, & ! in the nucleation rate expression
         incubation_time, & ! in the nucleation rate expression
-        nucleation_rate,& ! part/m^3/s
         radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
         growth_rate, flux, & ! growth rate and flux between different bins for the precipitates
         time_record, & ! used to record the outputs in files
@@ -83,7 +73,7 @@ subroutine run_model(prm, dot, stt, dst, &
         Temperature_temp, &
         h !used for Runge Kutta integration
 
-    character*100 :: filename !name of the gile where the outputs will be written
+    !character*100 :: filename !name of the gile where the outputs will be written
 
     INTEGER :: status ! I/O status
 
@@ -112,14 +102,14 @@ subroutine run_model(prm, dot, stt, dst, &
     temp_dot_precipitate_density = dot%precipitate_density(:,en)
     temp_radius_crit = stt%radius_crit
     temp_x_eq_matrix = prm%ceq_matrix
-    temp_x_eq_interface = x_eq_interface
+    temp_x_eq_interface = stt%x_eq_interface
     temp_c_vacancy = stt%c_vacancy(en)
     temp_dislocation_density = prm%rho_0
     Temperature_temp = prm%Temperature
     stt%time(en) = 0.0_pReal
     ! time_record is used to record the results in textfiles
     time_record = -dt
-    nucleation_rate = 0.0_pReal
+    stt%nucleation_rate = 0.0_pReal
     h = dt
 
 
@@ -168,21 +158,21 @@ subroutine run_model(prm, dot, stt, dst, &
         ! print*, 'Incubation time', incubation_time
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = calculate_nucleation_rate(prm, stt, &
+            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                     nucleation_site_density, zeldovich_factor, beta_star, &
                                     incubation_time, &
                                     en)
-            print*, 'nucleation rate', nucleation_rate*1e-6, '/cm^3'
+            print*, 'nucleation rate', stt%nucleation_rate*1e-6, '/cm^3'
         else
-            nucleation_rate = 0.0_pReal
+            stt%nucleation_rate = 0.0_pReal
         endif
 
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
         !calculate the precipitate growth in all bins dot%precipitate_density
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
-                                    x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                    stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
+                                    stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                    stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
                                     dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
@@ -208,9 +198,9 @@ subroutine run_model(prm, dot, stt, dst, &
         stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k1
 
 
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
-                                x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,&
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
+                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
                                 dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
@@ -224,20 +214,20 @@ subroutine run_model(prm, dot, stt, dst, &
         incubation_time = REAL(prm%incubation) * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = calculate_nucleation_rate(prm, stt, &
+            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                     nucleation_site_density, zeldovich_factor, beta_star, &
                                     incubation_time, &
                                     en)
         else
-            nucleation_rate = 0.0_pReal
+            stt%nucleation_rate = 0.0_pReal
         endif
 
 
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
-                                x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  dst%diffusion_coefficient(:,en), &
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
+                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
                                 dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
@@ -252,9 +242,9 @@ subroutine run_model(prm, dot, stt, dst, &
         stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k2
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
-                                x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
+                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
                                 dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
         ! empty the first bin to avoid precipitate accumulation
@@ -284,19 +274,19 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         if (stt%time(en) > 0.0_pReal) then
-            nucleation_rate = calculate_nucleation_rate(prm, stt, &
+            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                     nucleation_site_density, zeldovich_factor, beta_star, &
                                     incubation_time, &
                                     en)
         else
-                nucleation_rate = 0.0_pReal
+                stt%nucleation_rate = 0.0_pReal
         endif
 
         dot%precipitate_density = 0.0 * dot%precipitate_density
         !calculate precipitate growth rate in all bins
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
-                                x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  &
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
+                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
                                 dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
@@ -323,7 +313,7 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
         print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
         print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
-        print*, 'Nucleation rate :part/micron^3/s ', nucleation_rate*1.0e-18
+        print*, 'Nucleation rate :part/micron^3/s ', stt%nucleation_rate*1.0e-18
         print*, 'Critical Radius : ', stt%radius_crit*1e9, 'nm'
         
             
@@ -354,7 +344,7 @@ subroutine run_model(prm, dot, stt, dst, &
             prm%Temperature = Temperature_temp
             !radius_crit = temp_radius_crit
             prm%ceq_matrix = temp_x_eq_matrix
-            x_eq_interface = temp_x_eq_interface
+            stt%x_eq_interface = temp_x_eq_interface
             !diffusion_coefficient(1) = temp_diffusion_coefficient
 
             !decrease time step by a factor arbitrarily chose (2)
@@ -386,7 +376,7 @@ subroutine run_model(prm, dot, stt, dst, &
             temp_c_matrix = dst%c_matrix(:,en)
             !temp_radius_crit = radius_crit
             temp_x_eq_matrix = prm%ceq_matrix
-            temp_x_eq_interface = x_eq_interface
+            temp_x_eq_interface = stt%x_eq_interface
             !temp_c_vacancy = stt%c_vacancy(en)
             !temp_dislocation_density = dislocation_density
             Temperature_temp = prm%Temperature
@@ -398,7 +388,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
                 call output_results(prm%testfolder, prm%filesuffix, stt, dst, &
-                                    nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
+                                     production_rate, annihilation_rate, dislocation_density, &
                                      en)
 
 

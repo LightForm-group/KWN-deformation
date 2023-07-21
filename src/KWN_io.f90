@@ -213,7 +213,7 @@ end subroutine read_configuration
 
 
 subroutine output_results(testfolder, filesuffix, stt, dst, &
-                        nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
+                        production_rate, annihilation_rate, dislocation_density, &
                          en)
 
     type(tKwnpowerlawState), intent(in) :: stt
@@ -223,7 +223,6 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
     real(pReal), intent(in) :: &
         production_rate, & ! production rate for excess vacancies
         annihilation_rate, & !annihilation rate for excess vacancies
-        nucleation_rate, & ! part/m^3/s
         dislocation_density ![/m^2]
 
     
@@ -255,7 +254,7 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
         results(1,4)=0.0
     endif
     results(1,7:8)=dst%c_matrix(:,en)
-    results(1,6)=nucleation_rate*1.0e-18
+    results(1,6)=stt%nucleation_rate*1.0e-18
     if (results(1,6)<1.0e-30_pReal) then
         results(1,6)=0.0
     endif

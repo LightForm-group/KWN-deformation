@@ -19,8 +19,7 @@ program KWN
     use KWN_model, only: run_model
     
     implicit none
-
-
+    
     !--------------------------------------------------------------------------------------------------
     ! containers for parameters and state
     type(tParameters) :: prm
@@ -32,31 +31,19 @@ program KWN
         Nmembers, &
         en
 
-    real(pReal), dimension(:), allocatable :: &
-        x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
-
-
-    real(pReal) :: &
-        interface_c!interface composition between matrix and a precipitate
-
     real(pReal) :: &
         dt !time step for integration [s]
 
 
     call initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, en, &
-                                interface_c, &
-                                dt, &
-                                x_eq_interface &
+                                dt &
                                 )
-
 
 
     call run_model(prm, dot, stt, dst, &
                    Nmembers, en, &
-                   interface_c,  &
-                   dt,  &
-                   x_eq_interface &
+                   dt  &
                    )
 
 

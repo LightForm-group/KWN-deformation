@@ -10,9 +10,7 @@ contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, en, &
-                                interface_c, &
-                                dt, &
-                                x_eq_interface &
+                                dt &
                                 )
 
 
@@ -26,12 +24,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         Nmembers, &
         en
 
-
-    real(pReal), dimension(:), allocatable, intent(out) :: &
-        x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
-
-    real(pReal), intent(out) :: &
-        interface_c
     
 
     real(pReal), intent(out) :: &
@@ -48,8 +40,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
         production_rate, & ! production rate for excess vacancies
         annihilation_rate, & !annihilation rate for excess vacancies
         integral_dist_function, & ! used to calculate the initial distribution
-        mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
-        nucleation_rate, & ! part/m^3/s
         deltaGv, & ! chemical driving force [J/mol]
         vol_int
 
@@ -102,7 +92,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
     allocate(stt%normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
     allocate(stt%growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
-    allocate(x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
+    allocate(stt%x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
     allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
     allocate(stt%c_vacancy (Nmembers), source=0.0_pReal) ! Number of excess vacancies
     allocate(stt%yield_stress (Nmembers), source=0.0_pReal) ! Yield stress that will be calculated from solid solution, dislocation and precipitates
@@ -284,7 +274,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
     call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
                                 prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-                                R, x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+                                R, stt%x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
     !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
     ! calculate critical radius in the case of a binary alloy
@@ -293,9 +283,9 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     end if
 
     !calculate the initial growth rate of precipitates of all sizes
-    call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, &
+    call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, stt%x_eq_interface,prm%atomic_volume, &
                             na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
-                            dot%precipitate_density(:,en), nucleation_rate,  dst%diffusion_coefficient, &
+                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
                             dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
 
@@ -319,39 +309,33 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'Initialising outputs'
     
 
-    call initialise_outputs(prm, stt, dst, nucleation_rate,  &
-                                dt, stt%growth_rate_array, &
-                               mean_particle_strength, &
-                               x_eq_interface, en)
+    call initialise_outputs(prm, stt, dst, &
+                                dt, &
+                               en)
     
     print*, 'Writing outputs'
 
     call output_results(prm%testfolder, prm%filesuffix, stt, dst,  &
-                        nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
+                        production_rate, annihilation_rate, dislocation_density, &
                          en)
     print*, 'End initialisation'
 
 end subroutine initialise_model_state
 
 
-subroutine initialise_outputs( prm, stt, dst, nucleation_rate, &
-                               dt, growth_rate_array, &
-                               mean_particle_strength, &
-                               x_eq_interface, en)
+subroutine initialise_outputs( prm, stt, dst,  &
+                               dt, &
+                               en)
     implicit none
 
     type(tParameters), intent(in) :: prm
     type(tKwnpowerlawState), intent(in) :: stt
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
 
-    real(pReal), dimension(:), allocatable, intent(in) :: &
-        growth_rate_array, &!array that contains the precipitate growth rate of each bin
-        x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
     real(pReal), intent(in) :: &
-        dt, & !time step for integration [s]
-        mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
-        nucleation_rate ! part/m^3/s
+        dt !time step for integration [s]
+
     
 
 
@@ -424,7 +408,7 @@ subroutine initialise_outputs( prm, stt, dst, nucleation_rate, &
     filename = 'results/kinetics_data_'
     filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1, file = filename,  ACTION="write", STATUS="replace")
-        write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
+        write(1,*) '#Time, [s], Mean Radius [nm], Total precipitate density [micron-^3], Volume fraction [], Critical radius [nm], Nucleation rate [s^-1.micron-^3], Concentration in the matrix [at %]'
     close(1)
 
     ! Write all the input parameters in a file
