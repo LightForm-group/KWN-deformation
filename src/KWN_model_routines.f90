@@ -281,7 +281,7 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
 
     integer, intent(in) :: N_Steps, N_elements
     real(pReal), intent(in), dimension(0:N_steps) :: bins
-    real(pReal), intent(in), dimension(N_steps) :: precipitate_density
+    real(pReal), intent(inout), dimension(N_steps) :: precipitate_density
     real(pReal), intent(in), dimension(N_elements) :: ceq_precipitate, diffusion_coefficient, c_matrix
     real(pReal), intent(in) :: atomic_volume,  molar_volume,  nucleation_rate
     real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density
@@ -293,7 +293,7 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
     integer :: bin
 
   
-
+    dot_precipitate_density=0.0_pReal
 
    ! the growth rate is stored to change the time step in the main program
     growth_rate_array = diffusion_coefficient(1)/bins&
@@ -346,7 +346,9 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
                     
                     
                     enddo kwnbins_growth
-            
+    ! empty the first bin to avoid precipitate accumulation
+    dot_precipitate_density(1) = 0.0_pReal
+    precipitate_density(1) = 0.0_pReal      
       
 
 

@@ -34,11 +34,6 @@ subroutine run_model(prm, dot, stt, dst, &
 
     real(pReal) :: &
         deltaGv, & ! chemical driving force [J/mol]
-        interface_energy, & ![J/m^2]
-        nucleation_site_density, & !nucleation density [pr/m^3]
-        zeldovich_factor, & !Zeldovich factor
-        beta_star, & ! in the nucleation rate expression
-        incubation_time, & ! in the nucleation rate expression
         radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
         growth_rate, flux, & ! growth rate and flux between different bins for the precipitates
         time_record ! used to record the outputs in files
@@ -141,7 +136,6 @@ subroutine run_model(prm, dot, stt, dst, &
             stt%nucleation_rate = 0.0_pReal
         endif
 
-        dot%precipitate_density = 0.0 * dot%precipitate_density
 
         !calculate the precipitate growth in all bins dot%precipitate_density
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
@@ -150,11 +144,7 @@ subroutine run_model(prm, dot, stt, dst, &
                                     dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
-        ! empty the first bin to avoid precipitate accumulation
-        !dot%precipitate_density(0,en) = 0.0_pReal
-        dot%precipitate_density(1,en) = 0.0_pReal
-        !stt%precipitate_density(0,en) = 0.0_pReal
-        stt%precipitate_density(1,en) = 0.0_pReal
+
 
 
         ! Runge Kutta 4th order to calculate the derivatives
@@ -187,7 +177,6 @@ subroutine run_model(prm, dot, stt, dst, &
         endif
 
 
-        dot%precipitate_density = 0.0 * dot%precipitate_density
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
                                 stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
@@ -195,27 +184,16 @@ subroutine run_model(prm, dot, stt, dst, &
                                 dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
-
-        !dot%precipitate_density(0,en) = 0.0_pReal
-        dot%precipitate_density(1,en) = 0.0_pReal
-        !stt%precipitate_density(0,en) = 0.0_pReal
-        stt%precipitate_density(1,en) = 0.0_pReal
         k2 = dot%precipitate_density(:,en)
 
         ! Runge Kutta k3 calculation
         stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k2
-        dot%precipitate_density = 0.0 * dot%precipitate_density
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
                                 stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
                                 dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
-        ! empty the first bin to avoid precipitate accumulation
-        !dot%precipitate_density(0,en) = 0.0_pReal
-        dot%precipitate_density(1,en) = 0.0_pReal
-        !stt%precipitate_density(0,en) = 0.0_pReal
-        stt%precipitate_density(1,en) = 0.0_pReal
 
         k3 = dot%precipitate_density(:,en)
 
@@ -231,7 +209,6 @@ subroutine run_model(prm, dot, stt, dst, &
                 stt%nucleation_rate = 0.0_pReal
         endif
 
-        dot%precipitate_density = 0.0 * dot%precipitate_density
         !calculate precipitate growth rate in all bins
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
                                 stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
@@ -239,11 +216,6 @@ subroutine run_model(prm, dot, stt, dst, &
                                 dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
-
-        !dot%precipitate_density(0,en) = 0.0_pReal
-        dot%precipitate_density(1,en) = 0.0_pReal
-        !stt%precipitate_density(0,en) = 0.0_pReal
-        stt%precipitate_density(1,en) = 0.0_pReal
 
         k4 = dot%precipitate_density(:,en)
 
