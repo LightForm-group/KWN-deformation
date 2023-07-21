@@ -5,7 +5,8 @@ module KWN_data_types
     type :: tParameters
 
         integer :: &
-                kwn_nSteps              ! discretization in r-space
+                kwn_nSteps, &           ! discretization in r-space
+                incubation              ! for cases where nucleation is considered, set to 1 to consider incubation time
         real(pReal) :: &
                 kwn_stepsize, &         ! discretization in r-space
                 kwn_step0               ! minimum radius
@@ -47,7 +48,8 @@ module KWN_data_types
                 transition_radius, & ! Transition radius between bypassing and shearing
                 M,& ! Taylor Factor
                 dt_max,& ! max time step for numerical integration
-                time_record_step ! defines the frequency for the output files
+                time_record_step! defines the frequency for the output files
+        
 
         ! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
         real(pReal), dimension(:), allocatable :: &
@@ -61,20 +63,25 @@ module KWN_data_types
 
         real(pReal), dimension(:),   allocatable :: &
                 bins                    ! Bins for class sizes in KWN model
-            character(len=15), allocatable, dimension(:) :: &
+        character(len=15), allocatable, dimension(:) :: &
                 output
+        character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
+        character*100 :: testfolder !folder where the input file is
+
     end type tParameters
 
 
     type :: tKwnpowerlawState
         real(pReal), pointer, dimension(:,:) :: &
                 precipitate_density, & ! table with precipitate density number in each class size [/m^4]
-                normalized_distribution_function ! table with probability distribution for precipitates in each bin class size 
+                normalized_distribution_function! table with probability distribution for precipitates in each bin class size 
+                
         real(pReal),  dimension(  :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
                 time, & ! time [s]
-                yield_stress ! yield stress [MPa]
-                
+                yield_stress, & ! yield stress [MPa]
+                growth_rate_array ! table with growth rate in each bin
+        
         real(pReal) :: &
                 radius_crit, &
                 c_thermal_vacancy ! equilibrium concentration of vacancies

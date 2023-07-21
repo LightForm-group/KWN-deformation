@@ -33,28 +33,21 @@ program KWN
         en
 
     real(pReal), dimension(:), allocatable :: &
-        growth_rate_array, &!array that contains the precipitate growth rate of each bin
         x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
 
     real(pReal) :: &
-        interface_c, & !interface composition between matrix and a precipitate
-        incubation ! incubation prefactor either 0 or 1
+        interface_c!interface composition between matrix and a precipitate
 
     real(pReal) :: &
         dt !time step for integration [s]
-
-    character*100 :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
-    character*100 :: testfolder !folder where the input file is
 
 
     call initialise_model_state(prm, dot, stt, dst, &
                                 Nmembers, en, &
                                 interface_c, &
-                                incubation, &
-                                dt, growth_rate_array, &
-                                x_eq_interface, &
-                                filesuffix, testfolder &
+                                dt, &
+                                x_eq_interface &
                                 )
 
 
@@ -62,10 +55,8 @@ program KWN
     call run_model(prm, dot, stt, dst, &
                    Nmembers, en, &
                    interface_c,  &
-                   incubation, &
-                   dt, growth_rate_array, &
-                   x_eq_interface, &
-                   filesuffix, testfolder &
+                   dt,  &
+                   x_eq_interface &
                    )
 
 

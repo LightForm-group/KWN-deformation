@@ -9,13 +9,12 @@ module KWN_initialise
 contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
-                                Nmembers,  en, &
-                                interface_c,&
-                                incubation, &
-                                dt, growth_rate_array, &
-                                x_eq_interface, &
-                                filesuffix, testfolder &
+                                Nmembers, en, &
+                                interface_c, &
+                                dt, &
+                                x_eq_interface &
                                 )
+
 
     implicit none
 
@@ -29,19 +28,16 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
 
     real(pReal), dimension(:), allocatable, intent(out) :: &
-        growth_rate_array, & !array that contains the precipitate growth rate of each bin
         x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
     real(pReal), intent(out) :: &
-        interface_c, & !interface composition between matrix and a precipitate
-        incubation
+        interface_c
     
 
     real(pReal), intent(out) :: &
         dt  !time step for integration [s]
 
-    character*100, intent(out) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
-    character*100, intent(out) :: testfolder !folder where the input file is
+
 
     ! local variables
     integer ::  bin
@@ -74,23 +70,21 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(prm%ceq_matrix(N_elements), source=0.0_pReal)
     allocate(prm%ceq_precipitate(N_elements), source=0.0_pReal)
     allocate(prm%stoechiometry(N_elements+1))
-   
+
 
 
 
 
 
     !!! read the configuration file, using data arrays allocated above
-    call read_configuration( &
-                            testfolder, &
-                            prm, &
-                            incubation &  !incubation prefactor, either 0 or 1)
+    call read_configuration( & 
+                            prm &
                             )
 
     
     
     !-------- add a backslash to the folder path
-    testfolder = trim(testfolder)//'/'
+    prm%testfolder = trim(prm%testfolder)//'/'
 
 
     !----------- allocate variables not needed in configuration file
@@ -107,7 +101,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(dot%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
     allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
     allocate(stt%normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
-    allocate(growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
+    allocate(stt%growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
     allocate(x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
     allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
     allocate(stt%c_vacancy (Nmembers), source=0.0_pReal) ! Number of excess vacancies
@@ -146,9 +140,9 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
     ! define the output file suffix (contains Temperature in °C and strain rate in /s)
     if (prm%Temperature<1273) then
-        write(filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(prm%Temperature)-273, prm%strain_rate
+        write(prm%filesuffix, '(I3,"C_strain_rate",ES9.3, ".txt")') int(prm%Temperature)-273, prm%strain_rate
     else
-        write(filesuffix, '(I4,"C_strain_rate",ES9.3, ".txt")') int(prm%Temperature)-273, prm%strain_rate
+        write(prm%filesuffix, '(I4,"C_strain_rate",ES9.3, ".txt")') int(prm%Temperature)-273, prm%strain_rate
     endif
     !! initialise the bins for the size distribution
     ! SAM: Adjusted binning
@@ -165,7 +159,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !---------------------------------------------------------------------------------------------------------------------------------
 
     !initialize some outputs
-    growth_rate_array = 0.0_pReal
+    stt%growth_rate_array = 0.0_pReal
     stt%precipitate_density = 0.0_pReal
     dst%total_precipitate_density(en) = 0.0_pReal
     dst%avg_precipitate_radius(en) = prm%mean_radius_initial
@@ -302,7 +296,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, interface_c, x_eq_interface,prm%atomic_volume, &
                             na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
                             dot%precipitate_density(:,en), nucleation_rate,  dst%diffusion_coefficient, &
-                            dst%c_matrix(:,en), growth_rate_array,stt%radius_crit )
+                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
 
     !the critical radius for dissolution if calculated from the precipitate growth rate array - display it
@@ -325,14 +319,14 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'Initialising outputs'
     
 
-    call initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate,  &
-                                dt, growth_rate_array, &
+    call initialise_outputs(prm, stt, dst, nucleation_rate,  &
+                                dt, stt%growth_rate_array, &
                                mean_particle_strength, &
                                x_eq_interface, en)
     
     print*, 'Writing outputs'
 
-    call output_results(testfolder, filesuffix, stt, dst,  &
+    call output_results(prm%testfolder, prm%filesuffix, stt, dst,  &
                         nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
                          en)
     print*, 'End initialisation'
@@ -340,7 +334,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 end subroutine initialise_model_state
 
 
-subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_rate, &
+subroutine initialise_outputs( prm, stt, dst, nucleation_rate, &
                                dt, growth_rate_array, &
                                mean_particle_strength, &
                                x_eq_interface, en)
@@ -359,8 +353,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
         mean_particle_strength, & !particle strength for precipitation hardening effect calculation - ref[2]
         nucleation_rate ! part/m^3/s
     
-    character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
-    character*100, intent(in) :: testfolder !folder where the input file is
+
 
     integer, intent(in) :: en
 
@@ -372,7 +365,7 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 
     !Write the initial precipitate distribution in a textfile
     filename = 'results/initial_precipitation_distribution_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
    !  print*, 'File name:', filename 
     print*, 'Creating initial distribution output file... '
   
@@ -393,35 +386,35 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
     print*, 'Creating temperature file... '
     ! record the temperature (for versions where there would be a temperature ramp for example)
     filename = 'results/temperature_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1,file = filename,  ACTION="write", STATUS="replace" )
         write(1,*) '# Time [s], Temperature [K]'
     close(1)
 
     ! record the diffusion coefficient
     filename = 'results/diffusion_coefficient_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1, file = filename,  ACTION="write", STATUS="replace")
         write(1,*) '# Time [s], Diffusion coefficient [m^2/s] '
     close(1)
 
     ! record the number of excess vacancies
     filename = 'results/vacancies_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1, file = filename,  ACTION="write", STATUS="replace")
         write(1,*) '# Time [s], c_{ex}/c_{th}, total number of produced vacancies/c_{th}, total number of annihilated vacancies /c_{th}'
     close(1)
 
     ! record the dislocation density
     filename = 'results/dislocation_density_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1, file = filename, ACTION="write", STATUS="replace")
         write(1,*) '# Time [s], dislocation density [/m^2]'
     close(1)
 
     ! record calculated flow stress
     filename = 'results/stress_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1, file = filename, ACTION="write", STATUS="replace")
         write(1,*) '# Time [s], Stress [Pa]'
     close(1)
@@ -429,14 +422,14 @@ subroutine initialise_outputs(testfolder, filesuffix, prm, stt, dst, nucleation_
 
     ! this file will be used to store most of the results
     filename = 'results/kinetics_data_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
     open(1, file = filename,  ACTION="write", STATUS="replace")
         write(1,*) '#Time, [s], Average Radius [nm], Total precipitate density [/micron^3], Volume fraction [], Concentration in the matrix [at %]'
     close(1)
 
     ! Write all the input parameters in a file
     filename = 'results/KWN_parameters_'
-    filename = trim(testfolder)//trim(filename)//trim(filesuffix)
+    filename = trim(prm%testfolder)//trim(filename)//trim(prm%filesuffix)
         open(201,file= filename,  ACTION="write", STATUS="replace")
 
             WRITE (201,*) ' '

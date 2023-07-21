@@ -13,11 +13,9 @@ contains
 
 subroutine run_model(prm, dot, stt, dst, &
                     Nmembers, en, &
-                    interface_c,&
-                    incubation, &
-                    dt, growth_rate_array, &
-                    x_eq_interface, &
-                    filesuffix, testfolder &
+                    interface_c, &
+                    dt,  &
+                    x_eq_interface &
                     )
 
     implicit none
@@ -32,23 +30,14 @@ subroutine run_model(prm, dot, stt, dst, &
 
     
     real(pReal), dimension(:), allocatable, intent(inout) :: &
-        growth_rate_array, & !array that contains the precipitate growth rate of each bin
         x_eq_interface  !array with equilibrium concentrations at the interface between matrix and precipitates of each bin
 
     real(pReal), intent(in) :: &
-        interface_c, & !interface composition between matrix and a precipitate
-        incubation  ! incubation prefactor either 0 or 1
-
-
+        interface_c !interface composition between matrix and a precipitate
 
 
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
-
-
-    character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
-    character*100, intent(in) :: testfolder !folder where the input file is
-
 
     !!! local variables
     integer ::  bin, k, i
@@ -174,7 +163,7 @@ subroutine run_model(prm, dot, stt, dst, &
         end if
 
 
-        incubation_time = incubation * 2.0 &
+        incubation_time = REAL(prm%incubation) * 2.0 &
                             / ( PI * zeldovich_factor**2.0 * beta_star )
         ! print*, 'Incubation time', incubation_time
 
@@ -194,7 +183,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                     x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                     stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
-                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
         ! empty the first bin to avoid precipitate accumulation
@@ -222,7 +211,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,&
-                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
         zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature) ) &
@@ -232,7 +221,7 @@ subroutine run_model(prm, dot, stt, dst, &
         beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
                                          en, dst)
 
-        incubation_time = incubation * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
+        incubation_time = REAL(prm%incubation) * 2.0 / ( PI * zeldovich_factor**2.0 * beta_star )
 
         if (stt%time(en) > 0.0_pReal) then
             nucleation_rate = calculate_nucleation_rate(prm, stt, &
@@ -249,7 +238,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c,&
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  dst%diffusion_coefficient(:,en), &
-                                dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
 
@@ -266,7 +255,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate, &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
         ! empty the first bin to avoid precipitate accumulation
         !dot%precipitate_density(0,en) = 0.0_pReal
@@ -288,7 +277,7 @@ subroutine run_model(prm, dot, stt, dst, &
         beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
                                          en, dst)
 
-        incubation_time =  incubation * 2.0 / ( PI * zeldovich_factor**2 * beta_star )
+        incubation_time =  REAL(prm%incubation) * 2.0 / ( PI * zeldovich_factor**2 * beta_star )
 
 
 
@@ -308,7 +297,7 @@ subroutine run_model(prm, dot, stt, dst, &
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, interface_c, &
                                 x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), nucleation_rate,  &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
 
 
@@ -379,7 +368,7 @@ subroutine run_model(prm, dot, stt, dst, &
             if ( dst%total_precipitate_density(en) > 1.0_pReal ) then
 
                 dt = min( prm%dt_max, &
-                          (prm%bins(1)-prm%bins(0)) / maxval(abs(growth_rate_array)) &
+                          (prm%bins(1)-prm%bins(0)) / maxval(abs(stt%growth_rate_array)) &
                         )
                 ! print*,'dt growth rate', (prm%bins(1) - prm%bins(0)) / maxval(abs(growth_rate_array))
 
@@ -408,7 +397,7 @@ subroutine run_model(prm, dot, stt, dst, &
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 
 
-                call output_results(testfolder, filesuffix, stt, dst, &
+                call output_results(prm%testfolder, prm%filesuffix, stt, dst, &
                                     nucleation_rate, production_rate, annihilation_rate, dislocation_density, &
                                      en)
 

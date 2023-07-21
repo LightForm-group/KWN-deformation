@@ -7,24 +7,19 @@ module KWN_io
 contains
     
 subroutine read_configuration( &
-                            testfolder, &
-                            prm, &
-                            incubation  & !incubation prefactor, either 0 or 1)
-                            )
+                            prm)
     
 
     implicit none
 
-    character*100, intent(out) :: testfolder
     type(tParameters), intent(inout) :: prm
-    real(pReal), intent(out) :: &
-        incubation
         
 
     ! local variables
     INTEGER :: status ! I/O status
 	integer :: &
-			kwn_nSteps              ! discretization in r-space
+			kwn_nSteps, &           ! discretization in r-space
+            incubation              ! for cases where nucleation is considered, set to 1 to consider incubation time
 	real(pReal) :: &
 			kwn_stepsize, &         ! discretization in r-space
 			kwn_step0               ! minimum radius
@@ -75,7 +70,7 @@ subroutine read_configuration( &
 
     integer, dimension(:), allocatable :: stoechiometry !precipitate stoechiometry in the following order : Mg Zn Al
 
-
+    character*100 :: testfolder !folder where the input file is
 
 
     ! define namelist for reading model configuration
@@ -97,7 +92,7 @@ subroutine read_configuration( &
 
     ! set default values for parameters in case the user does not define them
     ! set to 1 to consider incubation time
-    incubation=0.0_pReal
+    incubation=0
     enthalpy=0.0_pReal ! if enthalpy and entropy are not given, they are set to 0 and ignored
     entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
 
@@ -203,6 +198,8 @@ subroutine read_configuration( &
     prm%total_time=total_time ! heat treatment time for the simulation 
     prm%dt_max=dt_max
     prm%time_record_step=time_record_step
+    prm%testfolder=testfolder
+    prm%incubation=incubation
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
      !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
