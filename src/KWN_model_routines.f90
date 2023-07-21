@@ -39,10 +39,10 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 
     ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
     ! otherwise; use the asinh function for the flow stress 
-    if(prm%k_p>0.0_pReal) then
-	    stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(prm%Temperature),stt%dislocation_density,dst,prm,en)
+    if(prm%sigma_r>0.0_pReal) then
+        stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))    
     else    
-        stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))
+        stt%yield_stress=calculate_yield_stress(dst,prm,stt, en)
     endif
     stt%c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * prm%Temperature) ) !TODO change this 23 to 2.3
 	c_j = exp(-prm%jog_formation_energy / (kB * prm%Temperature) )
@@ -81,7 +81,7 @@ subroutine update_precipate_properties(prm, dst, stt, en)
 
     implicit none
     type(tParameters), intent(in) :: prm
-    type(tKwnpowerlawState), intent(in) ::  stt
+    type(tKwnpowerlawState), intent(inout) ::  stt
     type(tKwnpowerlawMicrostructure), intent(inout) :: dst
     integer, intent(in) :: en
 

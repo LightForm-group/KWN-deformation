@@ -137,23 +137,21 @@ function calculate_nucleation_rate(prm, stt, dst, &
 
 end function calculate_nucleation_rate
 
-function calculate_yield_stress(mu,dislocation_density,dst,prm,en)
+function calculate_yield_stress(dst,prm,stt, en)
     implicit none
-    real(pReal), intent(in) :: &
-                            mu, & !saturation dislocation density
-                            dislocation_density  !macroscopic strain
-                        
+    type(tKwnpowerlawState), intent(inout) :: stt
     type(tParameters), intent(in) :: prm
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
     integer, intent(in) :: en
-    real(pReal) :: tau_s,tau_d,tau_p, calculate_yield_stress
+    real(pReal) :: tau_s,tau_d,tau_p, mu, calculate_yield_stress
     !calculate yield stress
        
+        mu = calculate_shear_modulus(prm%Temperature)
         tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
         print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'
         !print*, 'sum c', sum(dst%c_matrix(:,en))
     !Taylor relation for dislocation contribution
-        tau_d=0.3*mu*prm%burgers*sqrt(dislocation_density)
+        tau_d=0.3*mu*prm%burgers*sqrt(stt%dislocation_density)
         print*, 'Dislocation contribution', tau_d*1e-6, 'MPa'
     !precipitate contribution to yield stress
     !expression only valid if all precipitates are sheared - if not, use an expression depending on the whole distribution

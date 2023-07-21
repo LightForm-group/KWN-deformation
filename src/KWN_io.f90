@@ -97,13 +97,13 @@ subroutine read_configuration( &
     entropy=0.0_pReal ! if enthaly and entropy are given, equilibrium concentration is calculated from the solubility product
 
     ! the following have been set for aluminium and allow to calculate flow stress 
-    sigma_r = 1.0000e+08 
+    sigma_r = 0.0 ! 100MPa for aluminium, by default no external stress so we set this to zero
     A = 5.2140e-06 
     Q_stress = 6.0000e+04 
     n = 6.6831e+00 
 	!ToDO - if these parameters are given, they allow to calculate the flow stress as a function of solid solution hardening, precipitation and dislocation
     ! if used they should be calibrated for each temperature - possibly each strain rate... 
-	k_p=0.0_pReal ! for now the choice is not to use this way of calculating the flow stress unless defined by the user - a value for k_p could be 0.035_pReal
+	k_p=0.035_pReal ! 
 	k_s=683.0e+06_pReal
 	M=2.0_pReal
 	transition_radius=3.3e-9_pReal
