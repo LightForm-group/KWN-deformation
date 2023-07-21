@@ -282,7 +282,7 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
 
     open(1, file = filename,  ACTION="write", position="append")
-        write(1, 601) stt%time(en), stt%yield_stress(en)
+        write(1, 601) stt%time(en), dst%yield_stress(en)
     close(1)
 
 
@@ -303,5 +303,31 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
 1001 FORMAT(4E40.6)
 
 end subroutine output_results
+
+
+subroutine print_results(prm, stt, dst, en)
+!to display results on the commandline
+        
+    type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawMicrostructure), intent(in) :: dst
+    type(tKwnpowerlawState), intent(in) ::  stt
+    integer, intent(in) :: en
+    ! print the current system state
+    print*, ' '
+    print*, 'Time:', stt%time(en)
+    print*, 'Temperature', prm%Temperature
+    print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
+    print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
+    print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
+    print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
+    print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
+    print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
+    print*, 'Nucleation rate :part/micron^3/s ', stt%nucleation_rate*1.0e-18
+    print*, 'Critical Radius : ', stt%radius_crit*1e9, 'nm'
+    print*, 'Yield stress:', dst%yield_stress*1e-6, 'MPa'
+        
+
+
+end subroutine print_results
 
 end module KWN_io

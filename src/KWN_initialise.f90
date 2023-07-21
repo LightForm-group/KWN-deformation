@@ -82,7 +82,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(stt%x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
     allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
     allocate(stt%c_vacancy (Nmembers), source=0.0_pReal) ! Number of excess vacancies
-    allocate(stt%yield_stress (Nmembers), source=0.0_pReal) ! Yield stress that will be calculated from solid solution, dislocation and precipitates
+    allocate(dst%yield_stress (Nmembers), source=0.0_pReal) ! Yield stress that will be calculated from solid solution, dislocation and precipitates
     allocate(dot%c_vacancy (Nmembers), source=0.0_pReal) !Time derivative of excess vacancies
 
 
@@ -144,6 +144,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     stt%c_vacancy(en) = 0.0_pReal
     stt%dislocation_density = prm%rho_0
     stt%nucleation_rate = 0.0_pReal
+    stt%time=0.0_pReal
 
 
     !Calculated the precipitate density from the initial mean radius and volume fraction for an already existing distribution
@@ -306,10 +307,11 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'End initialisation'
 
 
-
+    ! initialise the temporary variables that will store the previous time step results
     dst_temp=dst
     prm_temp=prm
     stt_temp=stt
+    dot_temp=dot
 
 end subroutine initialise_model_state
 

@@ -3,11 +3,11 @@ module KWN_model
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate, &
-                                  update_precipate_properties, update_diffusion_coefficient
+                                  update_precipate_properties, update_diffusion_coefficient, next_time_increment
     use KWN_model_functions, only: calculate_binary_alloy_critical_radius, &
                                    calculate_beta_star, calculate_nucleation_rate, calculate_shear_modulus, &
                                    calculate_yield_stress
-    use KWN_io, only: output_results
+    use KWN_io, only: output_results, print_results
     
 contains
 
@@ -24,8 +24,6 @@ subroutine run_model(prm, dot, stt, dst, &
     type(tKwnpowerlawMicrostructure), intent(inout) :: dst, dst_temp
     
 
-
-
     integer, intent(in) :: &
         Nmembers, &
         en
@@ -33,179 +31,31 @@ subroutine run_model(prm, dot, stt, dst, &
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
 
-    !!local variables
-    ! the temp variables will be used to store the results of previous time step
-    ! ideally, the prm should all stay constant but because the temperature migt change, they can change right now
-    ! to do remove temperature from prm and put it somewhere else
-
-    integer ::  bin, k, i
+    integer ::  k
 
     real(pReal) :: &
-        deltaGv, & ! chemical driving force [J/mol]
-        radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
-        growth_rate, flux, & ! growth rate and flux between different bins for the precipitates
-        time_record ! used to record the outputs in files
+        time_record  ! used to record the outputs in files
 
-
-    real(pReal), dimension(:,:), allocatable :: &
-        results !variable to store the results
-
-    ! the 'temp' variables are to store the previous step and adapt the time step at each iteration
-    real(pReal), dimension(:), allocatable ::   &
-        k1,k2,k3,k4 ! variables used for Runge Kutta integration
-
-    real(pReal) :: &
-        dt_temp, &
-        h !used for Runge Kutta integration
 
     INTEGER :: status ! I/O status
 
-    ! allocate arrays for Runga Kutta and temporary work
-    allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge Kutta
-    allocate(k2(prm%kwn_nSteps), source=0.0_pReal) !
-    allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
-    allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
-    allocate(results(1,8)) ! the results are stored in this array
-
-    !the following are used to store the outputs from the previous iteration
-    ! and possibly come back to it if the time step was too high
-    dst_temp=dst
-    stt_temp=stt
-    prm_temp=prm
-    dot_temp=dot
-
-    stt%time(en) = 0.0_pReal
     ! time_record is used to record the results in textfiles
     time_record = -dt
-
-    h = dt
-
 
 
     k = 0
     loop_time : do while  (stt%time(en).LE. prm%total_time)
         k=k+1
         
-        ! print*, "dt:", dt
-        print*, ' '
-        print*, 'Time:', stt%time(en)
-        print*, 'Temperature', prm%Temperature
-        print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
-        print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
-        print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
-        print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
-        print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
-        print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
-        print*, 'Nucleation rate :part/micron^3/s ', stt%nucleation_rate*1.0e-18
-        print*, 'Critical Radius : ', stt%radius_crit*1e9, 'nm'
-        print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
+        ! display current state on terminal
+        call print_results(prm, stt, dst, en)
         
-        
-        
-        ! update diffusion coefficient taking into account strain induced vacancies
-        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)                                        
-        
-        ! calculate nucleation rate
-        if (stt%time(en) > 0.0_pReal) then
-            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
-                                                            dst, en)
-        else
-            stt%nucleation_rate = 0.0_pReal
-        endif
-
-        !calculate the precipitate growth in all bins dot%precipitate_density
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                    stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
-                                    stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+        ! go to next time increment and update the variables
+        ! this routine calculate new state for t = t+dt - main program
+        call next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp, dt, en)
 
 
-        ! Runge Kutta 4th order to calculate the derivatives
-
-        ! https://en.wikipedia.org/wiki/Runge–Kutta_methods
-
-
-        ! Runge Kutta k2 calculation
-        ! repeat the calculations above for t = t+dt/2
-
-        h = dt
-        k1 = dot%precipitate_density(:,en)
-
-        stt%time(en) = stt%time(en) + h / 2.0
-        stt%precipitate_density(:,en) =  stt_temp%precipitate_density(:,en) + h / 2.0 * k1
-
-
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
-                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
-
-        
-
-        if (stt%time(en) > 0.0_pReal) then
-            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
-                                                            dst, en)
-        else
-            stt%nucleation_rate = 0.0_pReal
-        endif
-
-
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
-                                dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
-
-
-        k2 = dot%precipitate_density(:,en)
-
-        ! Runge Kutta k3 calculation
-        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 2.0 * k2
-
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
-
-
-        k3 = dot%precipitate_density(:,en)
-
-        ! Runge Kutta k4 calculation
-        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h * k3
-        stt%time(en) = stt%time(en) + h / 2.0
-
-
-        if (stt%time(en) > 0.0_pReal) then
-            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
-                                                            dst, en)
-        else
-                stt%nucleation_rate = 0.0_pReal
-        endif
-
-        !calculate precipitate growth rate in all bins
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
-                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
-
-
-
-        k4 = dot%precipitate_density(:,en)
-
-
-        !Runge Kutta, calculate precipitate density in all bins (/m^4)
-        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 6.0 * (k1 + 2.0*k2 + 2.0*k3 + k4)
-
-
-        ! update precipate (dst) volume frac, density, avg radius, and matrix composition
-        call update_precipate_properties(prm, dst, stt, en)
-
-
-        ! print*, ''
-
-        
-            
-
-        ! Adapt time step so that the outputs do not vary too much between two time steps
+        ! Adapt time step - and possibly go back to previous step -  so that the outputs do not vary too much between two time steps
         !if  either:
         !    - the precipitate distribution in one class/ the vacancy concentration / the concentration in the matrix becomes negative,
         ! or - the growth rate is sufficiently fast for some precipitates to be able to jump from two size classes or more during one time step
@@ -217,36 +67,33 @@ subroutine run_model(prm, dot, stt, dst, &
               .OR. (minval(dst%c_matrix(:,en)) < 0.0_pReal) &
               .OR. any(isnan(stt%precipitate_density(:,en))) &
             )  then
-        ! go back one step before
-
-            stt%time(en) = stt%time(en) - dt
+        
+        
+            ! go back one step before
             dst = dst_temp
             stt = stt_temp
             prm = prm_temp
             dot = dot_temp
 
-
-            !decrease time step by a factor arbitrarily chose (2)
+            !because it didn't go well with this time step, decrease the time step by a factor arbitrarily chosen (2)
             dt = 0.5 * dt
 
-
         else
-        !set the time step so that a precipitate cannot grow from more than the space between two adjacent classes
+        !set the time step (for next step) so that a precipitate cannot grow from more than the space between two adjacent classes
 
             !not necessary to adapt the time step to the growth rate if there is no precipitate
             if ( dst%total_precipitate_density(en) > 1.0_pReal ) then
-
+                ! condition that guarantees that precipitates move from one class maximum
                 dt = min( prm%dt_max, &
                           (prm%bins(1)-prm%bins(0)) / maxval(abs(stt%growth_rate_array)) &
                         )
-                ! print*,'dt growth rate', (prm%bins(1) - prm%bins(0)) / maxval(abs(growth_rate_array))
 
             else
                 dt = min(prm%dt_max, dt*1.2) !increase slightly the time step by an arbitrary factor as long as there are no precipitates
             endif
 
 
-            ! store the new values of the outputs in the temporary variables
+            ! store the updated values of the outputs in the temporary variables
             dst_temp=dst
             prm_temp=prm
             stt_temp=stt
@@ -255,24 +102,20 @@ subroutine run_model(prm, dot, stt, dst, &
           
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
-
-
                 call output_results(prm%testfolder, prm%filesuffix, stt, dst, &
                                      en)
-
-
                 ! next time for which the outputs should be written
                         if (prm%time_record_step > 0) then
                             !Save data linearly
                             time_record = time_record + prm%time_record_step
-
                         else
                             !save data logarithimically
                             time_record = time_record + 10**(INT(LOG10(stt%time(en)))-1)
-
                   endif
-
             endif
+
+
+
         endif
         
     

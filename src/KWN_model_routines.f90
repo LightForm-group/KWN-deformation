@@ -2,7 +2,7 @@ module KWN_model_routines
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress
+    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate
 
 
 contains
@@ -40,9 +40,9 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
     ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
     ! otherwise; use the asinh function for the flow stress 
     if(prm%sigma_r>0.0_pReal) then
-        stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))    
+        dst%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))    
     else    
-        stt%yield_stress=calculate_yield_stress(dst,prm,stt, en)
+        dst%yield_stress=calculate_yield_stress(dst,prm,stt, en)
     endif
     stt%c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * prm%Temperature) ) !TODO change this 23 to 2.3
 	c_j = exp(-prm%jog_formation_energy / (kB * prm%Temperature) )
@@ -50,7 +50,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 	
 
 	! calculate production and annihilation rate of excess vacancies as described in ref [1] and [3]
-	production_rate =   prm%vacancy_generation * stt%yield_stress(en) * prm%atomic_volume * prm%strain_rate &
+	production_rate =   prm%vacancy_generation * dst%yield_stress(en) * prm%atomic_volume * prm%strain_rate &
 							 / prm%vacancy_energy &
 						+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
@@ -138,7 +138,8 @@ subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
 									 c_matrix,x_eq, atomic_volume, na, molar_volume, ceq_precipitate, &
 									 diffusion_coefficient, volume_fraction, enthalpy, entropy)
 
-	!  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
+	!TODO change this to take prm, stt etc as inputs rather than the variables separately
+    !  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
 	implicit none
 	integer, parameter :: pReal = selected_real_kind(25)
 	integer, intent(in) :: N_elements
@@ -353,6 +354,135 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
 
 
 end subroutine growth_precipitate
+
+
+subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp, dt, en)
+    !this is the routine in the main loop, calculate all variables for t=t+dt
+    implicit none
+
+    type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawMicrostructure), intent(inout) :: dst, dst_temp
+    type(tKwnpowerlawState), intent(inout) :: dot, dot_temp, stt, stt_temp
+    real(pReal), intent(in) :: &
+        dt !time step for integration [s]
+    integer, intent(in) :: en
+    !local variables 
+    real(pReal), dimension(:), allocatable ::   &
+        k1,k2,k3,k4 ! variables used for Runge Kutta integration
+
+    real(pReal) :: &
+        h !used for Runge Kutta integration
+
+    INTEGER :: status ! I/O status
+
+    ! allocate arrays for Runge Kutta 
+    allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge Kutta
+    allocate(k2(prm%kwn_nSteps), source=0.0_pReal) !
+    allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
+    allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
+
+        ! update diffusion coefficient taking into account strain induced vacancies
+        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)                                        
+        
+        ! calculate nucleation rate
+        if (stt%time(en) > 0.0_pReal) then
+            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
+                                                            dst, en)
+        else
+            stt%nucleation_rate = 0.0_pReal
+        endif
+
+        !calculate the precipitate growth in all bins dot%precipitate_density
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
+                                    stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
+                                    stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
+                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+
+
+        ! Runge Kutta 4th order to calculate the derivatives
+
+        ! https://en.wikipedia.org/wiki/Runge–Kutta_methods
+
+
+        ! Runge Kutta k2 calculation
+        ! repeat the calculations above for t = t+dt/2
+
+        h = dt
+        k1 = dot%precipitate_density(:,en)
+
+        stt%time(en) = stt%time(en) + h / 2.0
+        stt%precipitate_density(:,en) =  stt_temp%precipitate_density(:,en) + h / 2.0 * k1
+
+
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
+                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
+                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+
+        
+
+        if (stt%time(en) > 0.0_pReal) then
+            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
+                                                            dst, en)
+        else
+            stt%nucleation_rate = 0.0_pReal
+        endif
+
+
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
+                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
+                                dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+
+
+        k2 = dot%precipitate_density(:,en)
+
+        ! Runge Kutta k3 calculation
+        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 2.0 * k2
+
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
+                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+
+
+        k3 = dot%precipitate_density(:,en)
+
+        ! Runge Kutta k4 calculation
+        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h * k3
+        stt%time(en) = stt%time(en) + h / 2.0
+
+
+        if (stt%time(en) > 0.0_pReal) then
+            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
+                                                            dst, en)
+        else
+                stt%nucleation_rate = 0.0_pReal
+        endif
+
+        !calculate precipitate growth rate in all bins
+        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
+                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
+                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+
+
+
+        k4 = dot%precipitate_density(:,en)
+
+
+        !Runge Kutta, calculate precipitate density in all bins (/m^4)
+        stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 6.0 * (k1 + 2.0*k2 + 2.0*k3 + k4)
+
+
+        ! update precipate (dst) volume frac, density, avg radius, and matrix composition
+        call update_precipate_properties(prm, dst, stt, en)
+
+
+
+
+end subroutine next_time_increment
+
 
 
 end module KWN_model_routines
