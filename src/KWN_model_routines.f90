@@ -8,7 +8,7 @@ module KWN_model_routines
 contains
 
 
-subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en)
+subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 
     implicit none
     type(tParameters), intent(in) :: prm
@@ -74,7 +74,7 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en)
 						!   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
 						!   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
 
-end subroutine set_initial_timestep_constants
+end subroutine update_diffusion_coefficient
 
 
 subroutine update_precipate_properties(prm, dst, stt, en)
@@ -269,9 +269,9 @@ subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometr
 end subroutine interface_composition
 
 
-
+!TODO replace this function to take as entry only dot, stt, etc. 
 subroutine  growth_precipitate(N_elements, N_steps, bins,  &
-            x_eq_interface,atomic_volume, na, molar_volume, ceq_precipitate, precipitate_density, &
+            x_eq_interface,atomic_volume, molar_volume, ceq_precipitate, precipitate_density, &
             dot_precipitate_density, nucleation_rate, diffusion_coefficient, c_matrix, growth_rate_array , radius_crit)
 
     ! calculate precipitate growth rate for all class sizes
@@ -282,7 +282,7 @@ subroutine  growth_precipitate(N_elements, N_steps, bins,  &
     real(pReal), intent(in), dimension(0:N_steps) :: bins, x_eq_interface
     real(pReal), intent(in), dimension(N_steps) :: precipitate_density
     real(pReal), intent(in), dimension(N_elements) :: ceq_precipitate, diffusion_coefficient, c_matrix
-    real(pReal), intent(in) :: atomic_volume, na, molar_volume,  nucleation_rate
+    real(pReal), intent(in) :: atomic_volume,  molar_volume,  nucleation_rate
     real(pReal), intent(inout), dimension(N_steps) :: dot_precipitate_density
     real(pReal), intent(inout), dimension(0:N_steps) :: growth_rate_array
     real(pReal), intent(inout)::  radius_crit

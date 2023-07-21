@@ -3,7 +3,7 @@ module KWN_model
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate, &
-                                  update_precipate_properties, set_initial_timestep_constants
+                                  update_precipate_properties, update_diffusion_coefficient
     use KWN_model_functions, only: calculate_binary_alloy_critical_radius, &
                                    calculate_beta_star, calculate_nucleation_rate, calculate_shear_modulus, &
                                    calculate_yield_stress
@@ -124,7 +124,7 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
         
         
-        call set_initial_timestep_constants(prm, stt, dst, dot, dt, en)
+        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
                                           
 
 
@@ -159,7 +159,7 @@ subroutine run_model(prm, dot, stt, dst, &
                                     nucleation_site_density, zeldovich_factor, beta_star, &
                                     incubation_time, &
                                     en)
-            print*, 'nucleation rate', stt%nucleation_rate*1e-6, '/cm^3'
+            !print*, 'nucleation rate', stt%nucleation_rate*1e-6, '/cm^3'
         else
             stt%nucleation_rate = 0.0_pReal
         endif
@@ -168,7 +168,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
         !calculate the precipitate growth in all bins dot%precipitate_density
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                    stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                    stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                     stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
                                     dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
@@ -196,7 +196,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
                                 dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
@@ -223,7 +223,7 @@ subroutine run_model(prm, dot, stt, dst, &
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
                                 dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
@@ -240,7 +240,7 @@ subroutine run_model(prm, dot, stt, dst, &
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
                                 dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
@@ -282,7 +282,7 @@ subroutine run_model(prm, dot, stt, dst, &
         dot%precipitate_density = 0.0 * dot%precipitate_density
         !calculate precipitate growth rate in all bins
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
                                 dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
 
