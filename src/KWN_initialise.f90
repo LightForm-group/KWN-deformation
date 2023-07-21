@@ -9,15 +9,16 @@ module KWN_initialise
 contains
 
 subroutine initialise_model_state(prm, dot, stt, dst, &
-                                Nmembers, en, &
-                                dt &
-                                )
+                                  prm_temp,  stt_temp, dst_temp, &
+                                  Nmembers, en, &
+                                  dt &
+                                 )
 
     implicit none
 
-    type(tParameters), intent(out) :: prm
-    type(tKwnpowerlawState), intent(out) ::  dot, stt
-    type(tKwnpowerlawMicrostructure), intent(out) :: dst
+    type(tParameters), intent(out) :: prm, prm_temp
+    type(tKwnpowerlawState), intent(out) ::  dot, stt, stt_temp
+    type(tKwnpowerlawMicrostructure), intent(out) :: dst, dst_temp
 
     integer, intent(out) :: &
         Nmembers, &
@@ -26,7 +27,10 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     real(pReal), intent(out) :: &
         dt  !time step for integration [s]
 
-    ! local variables
+
+
+
+
     integer ::  bin
     real(pReal) :: & 
         radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
@@ -43,7 +47,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     en = 1
 
     ! --------------------------
-    ! allocating variables needed for reading configuration file
+    ! allocating variables needed for reading configuration file and temporary variables
     allocate(prm%migration_energy(N_elements), source=0.0_pReal)
     allocate(prm%diffusion0(N_elements), source=0.0_pReal)
     allocate(prm%c0_matrix(N_elements), source=0.0_pReal)
@@ -300,6 +304,12 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     call output_results(prm%testfolder, prm%filesuffix, stt, dst,  &
                          en)
     print*, 'End initialisation'
+
+
+
+    dst_temp=dst
+    prm_temp=prm
+    stt_temp=stt
 
 end subroutine initialise_model_state
 

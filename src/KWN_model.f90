@@ -12,15 +12,19 @@ module KWN_model
 contains
 
 subroutine run_model(prm, dot, stt, dst, &
+                    prm_temp,  stt_temp, dst_temp, &
                     Nmembers, en, &
                     dt &
                     )
 
     implicit none
 
-    type(tParameters), intent(inout) :: prm
-    type(tKwnpowerlawState), intent(inout) ::  dot, stt
-    type(tKwnpowerlawMicrostructure), intent(inout) :: dst
+    type(tParameters), intent(inout) :: prm, prm_temp
+    type(tKwnpowerlawState), intent(inout) ::  dot,  stt, stt_temp
+    type(tKwnpowerlawMicrostructure), intent(inout) :: dst, dst_temp
+    
+
+
 
     integer, intent(in) :: &
         Nmembers, &
@@ -29,7 +33,11 @@ subroutine run_model(prm, dot, stt, dst, &
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
 
-    !!! local variables
+    !!local variables
+    ! the temp variables will be used to store the results of previous time step
+    ! ideally, the prm should all stay constant but because the temperature migt change, they can change right now
+    ! to do remove temperature from prm and put it somewhere else
+
     integer ::  bin, k, i
 
     real(pReal) :: &
@@ -80,7 +88,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
     !the following are used to store the outputs from the previous iteration
     temp_diffusion_coefficient(:) = dst%diffusion_coefficient(:,en)
-    temp_total_precipitate_density = dst%total_precipitate_density(en)
+    dst_temp%total_precipitate_density = dst%total_precipitate_density
     temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
     temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)
     temp_c_matrix(:) = dst%c_matrix(:,en)
@@ -119,32 +127,23 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
         
         
-        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
-                                          
-
-
-        ! calculate nucleation rate
         
-
-        ! print*, 'Incubation time', incubation_time
-
+        ! update diffusion coefficient taking into account strain induced vacancies
+        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)                                        
+        
+        ! calculate nucleation rate
         if (stt%time(en) > 0.0_pReal) then
             stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                                             dst, en)
-            !print*, 'nucleation rate', stt%nucleation_rate*1e-6, '/cm^3'
         else
             stt%nucleation_rate = 0.0_pReal
         endif
-
 
         !calculate the precipitate growth in all bins dot%precipitate_density
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
                                     stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                     stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
                                     dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
-
-
-
 
 
         ! Runge Kutta 4th order to calculate the derivatives
@@ -175,7 +174,6 @@ subroutine run_model(prm, dot, stt, dst, &
         else
             stt%nucleation_rate = 0.0_pReal
         endif
-
 
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
@@ -284,7 +282,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
             ! store the new values of the outputs in the temporary variables
             temp_dot_precipitate_density = dot%precipitate_density(:,en)
-            temp_total_precipitate_density = dst%total_precipitate_density(en)
+            dst_temp%total_precipitate_density = dst%total_precipitate_density
             temp_precipitate_density = stt%precipitate_density(:,en)
             temp_avg_precipitate_radius = dst%avg_precipitate_radius(en)
             temp_precipitate_volume_frac = dst%precipitate_volume_frac(en)

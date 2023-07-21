@@ -22,10 +22,13 @@ program KWN
     
     !--------------------------------------------------------------------------------------------------
     ! containers for parameters and state
-    type(tParameters) :: prm
+    type(tParameters) :: prm, &
+                         prm_temp
     type(tKwnpowerlawState) ::  dot, &
-                                stt
-    type(tKwnpowerlawMicrostructure) :: dst
+                                stt, &
+                                stt_temp
+    type(tKwnpowerlawMicrostructure) :: dst, &
+                                        dst_temp
 
     integer :: &
         Nmembers, &
@@ -36,12 +39,14 @@ program KWN
 
 
     call initialise_model_state(prm, dot, stt, dst, &
+                                prm_temp, stt_temp, dst_temp, &
                                 Nmembers, en, &
                                 dt &
                                 )
 
 
     call run_model(prm, dot, stt, dst, &
+                   prm_temp, stt_temp, dst_temp, &
                    Nmembers, en, &
                    dt  &
                    )
