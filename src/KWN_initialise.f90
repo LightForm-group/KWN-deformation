@@ -267,7 +267,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     end if
 
     !calculate the initial growth rate of precipitates of all sizes
-    call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, stt%x_eq_interface,prm%atomic_volume, &
+    call growth_precipitate(stt, N_elements, prm%kwn_nSteps, prm%bins, prm%atomic_volume, &
                             na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
                             dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
                             dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )

@@ -167,10 +167,10 @@ subroutine run_model(prm, dot, stt, dst, &
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
         !calculate the precipitate growth in all bins dot%precipitate_density
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                    stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                    stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+        call growth_precipitate(stt, N_elements, prm%kwn_nSteps, prm%bins, prm%atomic_volume, &
+                            na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
+                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
+                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
 
         ! empty the first bin to avoid precipitate accumulation
@@ -195,10 +195,10 @@ subroutine run_model(prm, dot, stt, dst, &
         stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k1
 
 
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
-                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+         call growth_precipitate(stt, N_elements, prm%kwn_nSteps, prm%bins, prm%atomic_volume, &
+                            na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
+                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
+                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
         nucleation_site_density = sum(dst%c_matrix(:,en)) / prm%atomic_volume
         zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature) ) &
@@ -222,10 +222,10 @@ subroutine run_model(prm, dot, stt, dst, &
 
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
-                                dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+        call growth_precipitate(stt, N_elements, prm%kwn_nSteps, prm%bins, prm%atomic_volume, &
+                            na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
+                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
+                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
 
 
@@ -239,10 +239,10 @@ subroutine run_model(prm, dot, stt, dst, &
         stt%precipitate_density(:,en) = temp_precipitate_density + h / 2.0 * k2
         dot%precipitate_density = 0.0 * dot%precipitate_density
 
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+        call growth_precipitate(stt, N_elements, prm%kwn_nSteps, prm%bins, prm%atomic_volume, &
+                            na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
+                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
+                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
         ! empty the first bin to avoid precipitate accumulation
         !dot%precipitate_density(0,en) = 0.0_pReal
@@ -281,10 +281,10 @@ subroutine run_model(prm, dot, stt, dst, &
 
         dot%precipitate_density = 0.0 * dot%precipitate_density
         !calculate precipitate growth rate in all bins
-        call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
-                                stt%x_eq_interface,prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+        call growth_precipitate(stt, N_elements, prm%kwn_nSteps, prm%bins, prm%atomic_volume, &
+                            na, prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
+                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
+                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
 
 
 
