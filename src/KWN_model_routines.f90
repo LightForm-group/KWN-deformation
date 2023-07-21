@@ -394,9 +394,9 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
         !calculate the precipitate growth in all bins dot%precipitate_density
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                    stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
+                                    dst%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                     stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
 
 
         ! Runge Kutta 4th order to calculate the derivatives
@@ -415,9 +415,9 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
+                                dst%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
-                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
 
         
 
@@ -430,9 +430,9 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
-                                stt%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
+                                dst%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
-                                dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+                                dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
 
 
         k2 = dot%precipitate_density(:,en)
@@ -441,9 +441,9 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
         stt%precipitate_density(:,en) = stt_temp%precipitate_density(:,en) + h / 2.0 * k2
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
-                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
+                                dst%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
 
 
         k3 = dot%precipitate_density(:,en)
@@ -462,9 +462,9 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
         !calculate precipitate growth rate in all bins
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
-                                stt%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
+                                dst%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
                                 stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), stt%growth_rate_array, stt%radius_crit )
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
 
 
 

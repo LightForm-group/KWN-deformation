@@ -76,12 +76,10 @@ module KWN_data_types
                 precipitate_density ! table with precipitate density number in each class size [/m^4]
                 
                 
-        real(pReal),  dimension(  :), allocatable :: &
+        real(pReal),  dimension( :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
-                time, & ! time [s]
-                growth_rate_array, & ! table with growth rate in each bin
-                x_eq_interface ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
-        
+                time ! time [s]
+
         real(pReal) :: &
                 radius_crit, &
                 c_thermal_vacancy, & ! equilibrium concentration of vacancies
@@ -96,7 +94,10 @@ module KWN_data_types
                 total_precipitate_density, &
                 avg_precipitate_radius, &
                 precipitate_volume_frac, &
-                yield_stress ! yield stress [MPa]
+                yield_stress, & ! yield stress [MPa]
+                growth_rate_array  , & ! table with growth rate in each bin
+                x_eq_interface ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
+        
 
         real(pReal), dimension(:,:), allocatable :: &
                 c_matrix, &

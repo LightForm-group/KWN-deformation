@@ -85,7 +85,7 @@ subroutine run_model(prm, dot, stt, dst, &
             if ( dst%total_precipitate_density(en) > 1.0_pReal ) then
                 ! condition that guarantees that precipitates move from one class maximum
                 dt = min( prm%dt_max, &
-                          (prm%bins(1)-prm%bins(0)) / maxval(abs(stt%growth_rate_array)) &
+                          (prm%bins(1)-prm%bins(0)) / maxval(abs(dst%growth_rate_array)) &
                         )
 
             else

@@ -82,8 +82,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(dot%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! time derivative of the precipitate density in each bin
     allocate(stt%precipitate_density(prm%kwn_nSteps,1), source=0.0_pReal)  ! precipitate density in each bin
     allocate(normalized_distribution_function(prm%kwn_nSteps,1), source=0.0_pReal) ! distribution function for precipitate density [/m^4]
-    allocate(stt%growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
-    allocate(stt%x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
+    allocate(dst%growth_rate_array(prm%kwn_nSteps-1), source=0.0_pReal) ! array containing the growth rate in each bin
+    allocate(dst%x_eq_interface(0:prm%kwn_nSteps), source=0.0_pReal) ! equilibrium concentration at the interface taking into account Gibbs Thomson effect (one equilibrium concentration for each bin)
     allocate(stt%time (Nmembers), source=0.0_pReal) ! Time array
     allocate(stt%c_vacancy (Nmembers), source=0.0_pReal) ! Number of excess vacancies
     allocate(dst%yield_stress (Nmembers), source=0.0_pReal) ! Yield stress that will be calculated from solid solution, dislocation and precipitates
@@ -140,7 +140,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !---------------------------------------------------------------------------------------------------------------------------------
 
     !initialize some variables
-    stt%growth_rate_array = 0.0_pReal
+    dst%growth_rate_array = 0.0_pReal
     stt%precipitate_density = 0.0_pReal
     dst%total_precipitate_density(en) = 0.0_pReal
     dst%avg_precipitate_radius(en) = prm%mean_radius_initial
@@ -267,7 +267,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
     call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
                                 prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
-                                R, stt%x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+                                R, dst%x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
 
     !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
     ! calculate critical radius in the case of a binary alloy
@@ -276,10 +276,10 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     end if
 
     !calculate the initial growth rate of precipitates of all sizes
-    call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, stt%x_eq_interface,prm%atomic_volume, &
+    call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, dst%x_eq_interface,prm%atomic_volume, &
                              prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
                             dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
-                            dst%c_matrix(:,en), stt%growth_rate_array,stt%radius_crit )
+                            dst%c_matrix(:,en), dst%growth_rate_array,stt%radius_crit )
 
 
     !the critical radius for dissolution if calculated from the precipitate growth rate array - display it
