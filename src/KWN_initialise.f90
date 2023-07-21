@@ -13,7 +13,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
                                 dt &
                                 )
 
-
     implicit none
 
     type(tParameters), intent(out) :: prm
@@ -23,34 +22,25 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     integer, intent(out) :: &
         Nmembers, &
         en
-
-    
-
+ 
     real(pReal), intent(out) :: &
         dt  !time step for integration [s]
-
-
 
     ! local variables
     integer ::  bin
     real(pReal) :: & 
         radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
         N_0 = 0.0, & !parameter used
-        dislocation_density, & ![/m^2]
         production_rate, & ! production rate for excess vacancies
         annihilation_rate, & !annihilation rate for excess vacancies
         integral_dist_function, & ! used to calculate the initial distribution
         deltaGv, & ! chemical driving force [J/mol]
         vol_int
 
-
   
     Nmembers = 1 ! Nmembers is the number of point in the simulation - here 1 as it's a single point model
 
     en = 1
-
- 
-
 
     ! --------------------------
     ! allocating variables needed for reading configuration file
@@ -61,17 +51,10 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     allocate(prm%ceq_precipitate(N_elements), source=0.0_pReal)
     allocate(prm%stoechiometry(N_elements+1))
 
-
-
-
-
-
     !!! read the configuration file, using data arrays allocated above
     call read_configuration( & 
                             prm &
                             )
-
-    
     
     !-------- add a backslash to the folder path
     prm%testfolder = trim(prm%testfolder)//'/'
@@ -148,14 +131,15 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     enddo kwnbins_init
     !---------------------------------------------------------------------------------------------------------------------------------
 
-    !initialize some outputs
+    !initialize some variables
     stt%growth_rate_array = 0.0_pReal
     stt%precipitate_density = 0.0_pReal
     dst%total_precipitate_density(en) = 0.0_pReal
     dst%avg_precipitate_radius(en) = prm%mean_radius_initial
     dst%precipitate_volume_frac(en) = prm%volume_fraction_initial
     stt%c_vacancy(en) = 0.0_pReal
-    dislocation_density = prm%rho_0
+    stt%dislocation_density = prm%rho_0
+    stt%nucleation_rate = 0.0_pReal
 
 
     !Calculated the precipitate density from the initial mean radius and volume fraction for an already existing distribution
@@ -305,10 +289,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'Initial matrix composition :', dst%c_matrix(:,en)
     print*, 'Equilibrium composition, precipitate :', prm%ceq_precipitate
     print*, 'Equilibrium composition matrix :', prm%ceq_matrix
-
     print*, 'Initialising outputs'
     
-
     call initialise_outputs(prm, stt, dst, &
                                 dt, &
                                en)
@@ -316,7 +298,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     print*, 'Writing outputs'
 
     call output_results(prm%testfolder, prm%filesuffix, stt, dst,  &
-                        production_rate, annihilation_rate, dislocation_density, &
                          en)
     print*, 'End initialisation'
 
@@ -342,7 +323,7 @@ subroutine initialise_outputs( prm, stt, dst,  &
     integer, intent(in) :: en
 
     ! local variables
-    character*200 :: filename !name of the gile where the outputs will be written
+    character*200 :: filename !name of the file where the outputs will be written
     integer :: bin, i, status
 
     ! print*, 'file_suffix : ', filesuffix

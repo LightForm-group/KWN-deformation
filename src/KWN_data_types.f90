@@ -86,7 +86,8 @@ module KWN_data_types
         real(pReal) :: &
                 radius_crit, &
                 c_thermal_vacancy, & ! equilibrium concentration of vacancies
-                nucleation_rate ! part/m^3/s
+                nucleation_rate, & ! part/m^3/s
+                dislocation_density ! m^(-2)
 
     end type tKwnpowerlawState
 

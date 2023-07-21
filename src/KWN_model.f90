@@ -25,8 +25,7 @@ subroutine run_model(prm, dot, stt, dst, &
     integer, intent(in) :: &
         Nmembers, &
         en
-
-    
+   
     real(pReal), intent(inout) :: &
         dt !time step for integration [s]
 
@@ -42,15 +41,11 @@ subroutine run_model(prm, dot, stt, dst, &
         incubation_time, & ! in the nucleation rate expression
         radiusL, radiusR, radiusC, & ! used for the calculation of the growth rate in the different bins
         growth_rate, flux, & ! growth rate and flux between different bins for the precipitates
-        time_record, & ! used to record the outputs in files
-        production_rate, & ! production rate for excess vacancies
-        annihilation_rate, & !annihilation rate for excess vacancies
-        dislocation_density ![/m^2]
+        time_record ! used to record the outputs in files
 
 
     real(pReal), dimension(:,:), allocatable :: &
         results !variable to store the results
-
 
     ! the 'temp' variables are to store the previous step and adapt the time step at each iteration
     real(pReal), dimension(:), allocatable ::   &
@@ -73,11 +68,7 @@ subroutine run_model(prm, dot, stt, dst, &
         Temperature_temp, &
         h !used for Runge Kutta integration
 
-    !character*100 :: filename !name of the gile where the outputs will be written
-
     INTEGER :: status ! I/O status
-
-
 
     ! allocate arrays for Runga Kutta and temporary work
     allocate(k1(prm%kwn_nSteps), source=0.0_pReal) ! Runge Kutta
@@ -109,7 +100,7 @@ subroutine run_model(prm, dot, stt, dst, &
     stt%time(en) = 0.0_pReal
     ! time_record is used to record the results in textfiles
     time_record = -dt
-    stt%nucleation_rate = 0.0_pReal
+
     h = dt
 
 
@@ -123,11 +114,17 @@ subroutine run_model(prm, dot, stt, dst, &
         print*, 'Time:', stt%time(en)
         print*, 'Temperature', prm%Temperature
         print*, 'Mean radius : ', dst%avg_precipitate_radius(en)*1e9, 'nm'
+        print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
+        print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
+        print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
+        print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
+        print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
+        print*, 'Nucleation rate :part/micron^3/s ', stt%nucleation_rate*1.0e-18
+        print*, 'Critical Radius : ', stt%radius_crit*1e9, 'nm'
+        print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
         
         
-        call set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
-                                           dislocation_density, &
-                                          production_rate, annihilation_rate)
+        call set_initial_timestep_constants(prm, stt, dst, dot, dt, en)
                                           
 
 
@@ -308,13 +305,7 @@ subroutine run_model(prm, dot, stt, dst, &
 
 
         ! print*, ''
-        print*, 'Total precipitate density : ' , dst%total_precipitate_density*1e-18 , '/micron^3'
-        print*, 'Precipitate volume fraction :',  dst%precipitate_volume_frac(en)
-        print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
-        print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
-        print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
-        print*, 'Nucleation rate :part/micron^3/s ', stt%nucleation_rate*1.0e-18
-        print*, 'Critical Radius : ', stt%radius_crit*1e9, 'nm'
+
         
             
 
@@ -382,13 +373,12 @@ subroutine run_model(prm, dot, stt, dst, &
             Temperature_temp = prm%Temperature
             !temp_diffusion_coefficient = diffusion_coefficient(1)
             !stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(Temperature),dislocation_density,dst,prm,en)
-            print*, 'Yield stress:', stt%yield_stress*1e-6, 'MPa'
+          
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
 
 
                 call output_results(prm%testfolder, prm%filesuffix, stt, dst, &
-                                     production_rate, annihilation_rate, dislocation_density, &
                                      en)
 
 

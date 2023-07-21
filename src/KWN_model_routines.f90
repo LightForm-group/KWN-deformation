@@ -8,9 +8,7 @@ module KWN_model_routines
 contains
 
 
-subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
-                                           dislocation_density, &
-                                          production_rate, annihilation_rate)
+subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en)
 
     implicit none
     type(tParameters), intent(in) :: prm
@@ -22,16 +20,13 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
 
 
 
-    real(pReal), intent(out) :: &
-        production_rate, & ! production rate for excess vacancies
-        annihilation_rate, & !annihilation rate for excess vacancies
-        dislocation_density ![/m^2]
-
     real(pReal) :: &
         mu, & !shear modulus [Pa]
         flow_stress, & ! flow stress in the material [Pa]
         c_j, & ! jog concentration - ref [1]
-        strain !macroscopic strain
+        strain, & !macroscopic strain
+        production_rate, & ! production rate for excess vacancies
+        annihilation_rate!annihilation rate for excess vacancies
     
 
 	dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / (prm%Temperature * kb) )
@@ -39,13 +34,13 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
 
 
 
-    dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
+    stt%dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
     	! if there is deformation, calculate the vacancy related parameters
 
     ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
     ! otherwise; use the asinh function for the flow stress 
     if(prm%k_p>0.0_pReal) then
-	    stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(prm%Temperature),dislocation_density,dst,prm,en)
+	    stt%yield_stress=calculate_yield_stress(calculate_shear_modulus(prm%Temperature),stt%dislocation_density,dst,prm,en)
     else    
         stt%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))
     endif
@@ -60,7 +55,7 @@ subroutine set_initial_timestep_constants(prm, stt, dst, dot, dt, en, &
 						+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
 	annihilation_rate = prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * prm%Temperature) ) &
-						* ( dislocation_density / prm%dislocation_arrangement**2 &
+						* ( stt%dislocation_density / prm%dislocation_arrangement**2 &
 							+ 1.0 / prm%vacancy_sink_spacing**2 ) &
 						* stt%c_vacancy(en)
 	
