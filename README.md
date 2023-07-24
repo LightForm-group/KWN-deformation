@@ -10,7 +10,7 @@ The model is described in detail in reference [3].
 
 Compiler: gfortran or ifort
 
-Installer: [Fortran Package Manager](https://fpm.fortran-lang.org/install/index.html#install). If using on MacOs, please install with Conda Package Manager and not with homebrew.
+Installer: [Fortran Package Manager](https://fpm.fortran-lang.org/install/index.html#install). If using on MacOS, please install with Conda Package Manager and not with homebrew.
 
 ## Building with fpm
 
