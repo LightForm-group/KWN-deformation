@@ -2,7 +2,7 @@ The namelist.input options required are described below, with example values.
 
 &config
 ! output settings
-testfolder = 'tests/test_1'             ! path to output folder
+testfolder = 'test_1'             ! path to output folder
 
 ! Deformation conditions
 Temperature = 423.000000                ! [K] temperature
