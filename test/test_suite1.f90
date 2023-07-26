@@ -39,28 +39,32 @@ subroutine test_shear_modulus(error)
 end subroutine test_shear_modulus
 
 
+
 subroutine test_beta_star_binary(error)
   use KWN_model_functions, only: calculate_beta_star
+  use KWN_data_types, only: tKwnpowerlawMicrostructure
+
   type(error_type), allocatable, intent(out) :: error
 
   real(qp) :: val
   real(qp) :: expected
-  
+
   real(qp) :: radius_crit = 1d-9
   real(qp) :: lattice_param = 3
-  real(qp), dimension(:), allocatable :: diffusion_coefficient
-  real(qp), dimension(:,:), allocatable :: c_matrix
+
+  type(tKwnpowerlawMicrostructure) :: dst
+
   integer :: en = 1
 
-  allocate(diffusion_coefficient(2))
-  allocate(c_matrix(2,1))
+   allocate(dst%c_matrix                 (2,1), source=0.0_qp)
+   allocate(dst%diffusion_coefficient    (2,1), source=0.0_qp)
 
-  diffusion_coefficient(:) = 2
-  c_matrix(1,:) = 1
-  c_matrix(2,:) = 0
+  dst%diffusion_coefficient(1,:) = 2
+  dst%diffusion_coefficient(2,:) = 2
+  dst%c_matrix(1,:) = 1
+  dst%c_matrix(2,:) = 0
   
-  val = calculate_beta_star(radius_crit, lattice_param, diffusion_coefficient, &
-                            c_matrix, en)
+  val = calculate_beta_star(radius_crit, lattice_param,  en, dst)
   
   expected = 0.310280E-18
   call check(error, val, expected, rel=.true., thr=0.001_qp)
@@ -70,6 +74,9 @@ end subroutine test_beta_star_binary
 
 subroutine test_beta_star_ternary(error)
   use KWN_model_functions, only: calculate_beta_star
+  use KWN_data_types, only: tKwnpowerlawMicrostructure
+
+
   type(error_type), allocatable, intent(out) :: error
 
   real(qp) :: val
@@ -77,19 +84,20 @@ subroutine test_beta_star_ternary(error)
   
   real(qp) :: radius_crit = 1d-9
   real(qp) :: lattice_param = 3
-  real(qp), dimension(:), allocatable :: diffusion_coefficient
-  real(qp), dimension(:,:), allocatable :: c_matrix
+
+  type(tKwnpowerlawMicrostructure) :: dst
+
   integer :: en = 1
 
-  allocate(diffusion_coefficient(2))
-  allocate(c_matrix(2,1))
+  allocate(dst%c_matrix                 (2,1), source=0.0_qp)
+  allocate(dst%diffusion_coefficient    (2,1), source=0.0_qp)
 
-  diffusion_coefficient(:) = 2
-  c_matrix(1,:) = 1
-  c_matrix(2,:) = 1
+  dst%diffusion_coefficient(1,:) = 2
+  dst%diffusion_coefficient(2,:) = 2
+  dst%c_matrix(1,:) = 1
+  dst%c_matrix(2,:) = 1
   
-  val = calculate_beta_star(radius_crit, lattice_param, diffusion_coefficient, &
-                            c_matrix, en)
+  val = calculate_beta_star(radius_crit, lattice_param,  en, dst)
   
   expected = 0.155140E-18
   call check(error, val, expected, rel=.true., thr=0.001_qp)

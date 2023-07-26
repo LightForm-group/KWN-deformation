@@ -249,11 +249,11 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
         results(1,4)=0.0
     endif
     results(1,7:8)=dst%c_matrix(:,en)
-    results(1,6)=stt%nucleation_rate*1.0e-18
+    results(1,6)=dst%nucleation_rate*1.0e-18
     if (results(1,6)<1.0e-30_pReal) then
         results(1,6)=0.0
     endif
-    results(1,5)=stt%radius_crit*1.0e9
+    results(1,5)=dst%radius_crit*1.0e9
 
     filename='results/kinetics_data_'
     filename=trim(testfolder)//trim(filename)//trim(filesuffix)
@@ -289,13 +289,13 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
     filename = 'results/vacancies_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
     open(1, file = filename,  ACTION="write", position="append")
-        write(1, 901) stt%time(en), stt%c_vacancy(en),  stt%c_thermal_vacancy 
+        write(1, 901) stt%time(en), stt%c_vacancy(en),  dst%c_thermal_vacancy 
     close(1)
 
     filename = 'results/dislocation_density_'
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
     open(1, file = filename,  ACTION="write", position="append")
-        write(1, 601) stt%time(en), stt%dislocation_density
+        write(1, 601) stt%time(en), dst%dislocation_density
     close(1)
 
 601 FORMAT(2E40.6)
@@ -322,8 +322,8 @@ subroutine print_results(prm, stt, dst, en)
     print*, 'Solute concentration in the matrix' , dst%c_matrix(:,en)
     print*, 'Equilibrium concentration in the matrix' , prm%ceq_matrix(:)
     print*, 'Equilibrium volume fraction', (prm%c0_matrix(1)-prm%ceq_matrix(1))/(prm%ceq_precipitate(1)-prm%ceq_matrix(1))
-    print*, 'Nucleation rate :part/micron^3/s ', stt%nucleation_rate*1.0e-18
-    print*, 'Critical Radius : ', stt%radius_crit*1e9, 'nm'
+    print*, 'Nucleation rate :part/micron^3/s ', dst%nucleation_rate*1.0e-18
+    print*, 'Critical Radius : ', dst%radius_crit*1e9, 'nm'
     print*, 'Yield stress:', dst%yield_stress*1e-6, 'MPa'
         
 

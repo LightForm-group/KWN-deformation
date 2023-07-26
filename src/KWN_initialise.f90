@@ -146,8 +146,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     dst%avg_precipitate_radius(en) = prm%mean_radius_initial
     dst%precipitate_volume_frac(en) = prm%volume_fraction_initial
     stt%c_vacancy(en) = 0.0_pReal
-    stt%dislocation_density = prm%rho_0
-    stt%nucleation_rate = 0.0_pReal
+    dst%dislocation_density = prm%rho_0
+    dst%nucleation_rate = 0.0_pReal
     stt%time=0.0_pReal
 
 
@@ -272,22 +272,22 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
     ! calculate critical radius in the case of a binary alloy
     if (dst%c_matrix(2,en)==0) then
-        stt%radius_crit = calculate_binary_alloy_critical_radius(dst, prm, en)
+        dst%radius_crit = calculate_binary_alloy_critical_radius(dst, prm, en)
     end if
 
     !calculate the initial growth rate of precipitates of all sizes
     call growth_precipitate( N_elements, prm%kwn_nSteps, prm%bins, dst%x_eq_interface,prm%atomic_volume, &
                              prm%molar_volume, prm%ceq_precipitate, stt%precipitate_density, &
-                            dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient, &
-                            dst%c_matrix(:,en), dst%growth_rate_array,stt%radius_crit )
+                            dot%precipitate_density(:,en), dst%nucleation_rate,  dst%diffusion_coefficient, &
+                            dst%c_matrix(:,en), dst%growth_rate_array,dst%radius_crit )
 
 
     !the critical radius for dissolution if calculated from the precipitate growth rate array - display it
    print*, ''
-   print*, 'Critical radius:', stt%radius_crit*1.0e9, ' nm'
+   print*, 'Critical radius:', dst%radius_crit*1.0e9, ' nm'
 
 
-    stt%c_thermal_vacancy = 1.0
+    dst%c_thermal_vacancy = 1.0
     production_rate = 0.0
     annihilation_rate = 0.0
 

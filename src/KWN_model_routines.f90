@@ -34,7 +34,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 
 
 
-    stt%dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
+    dst%dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
     	! if there is deformation, calculate the vacancy related parameters
 
     ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
@@ -44,7 +44,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
     else    
         dst%yield_stress=calculate_yield_stress(dst,prm,stt, en)
     endif
-    stt%c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * prm%Temperature) ) !TODO change this 23 to 2.3
+    dst%c_thermal_vacancy = 23.0 * exp(-prm%vacancy_energy / (kB * prm%Temperature) ) !TODO change this 23 to 2.3
 	c_j = exp(-prm%jog_formation_energy / (kB * prm%Temperature) )
 	strain = prm%strain_rate * stt%time(en)
 	
@@ -55,7 +55,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 						+ 0.5 * c_j * prm%atomic_volume * prm%strain_rate / (4.0 * prm%burgers**3)
 
 	annihilation_rate = prm%vacancy_diffusion0 * exp( -prm%vacancy_migration_energy / (kB * prm%Temperature) ) &
-						* ( stt%dislocation_density / prm%dislocation_arrangement**2 &
+						* ( dst%dislocation_density / prm%dislocation_arrangement**2 &
 							+ 1.0 / prm%vacancy_sink_spacing**2 ) &
 						* stt%c_vacancy(en)
 	
@@ -70,7 +70,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 	!update the diffusion coefficient as a function of the vacancy concentration
 	! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
 	dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -prm%migration_energy / (prm%Temperature * kb) ) &
-							* (1.0 + stt%c_vacancy(en) / stt%c_thermal_vacancy )! &
+							* (1.0 + stt%c_vacancy(en) / dst%c_thermal_vacancy )! &
 						!   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
 						!   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
 
@@ -386,17 +386,17 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
         
         ! calculate nucleation rate
         if (stt%time(en) > 0.0_pReal) then
-            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
+            dst%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                                             dst, en)
         else
-            stt%nucleation_rate = 0.0_pReal
+            dst%nucleation_rate = 0.0_pReal
         endif
 
         !calculate the precipitate growth in all bins dot%precipitate_density
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
                                     dst%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
-                                    stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
+                                    stt%precipitate_density, dot%precipitate_density(:,en), dst%nucleation_rate, &
+                                    dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), dst%growth_rate_array, dst%radius_crit )
 
 
         ! Runge Kutta 4th order to calculate the derivatives
@@ -416,23 +416,23 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
                                 dst%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,&
-                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
+                                stt%precipitate_density, dot%precipitate_density(:,en), dst%nucleation_rate,&
+                                dst%diffusion_coefficient(:,en), dst%c_matrix(:,en), dst%growth_rate_array, dst%radius_crit )
 
         
 
         if (stt%time(en) > 0.0_pReal) then
-            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
+            dst%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                                             dst, en)
         else
-            stt%nucleation_rate = 0.0_pReal
+            dst%nucleation_rate = 0.0_pReal
         endif
 
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins, &
                                 dst%x_eq_interface,prm%atomic_volume, prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  dst%diffusion_coefficient(:,en), &
-                                dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
+                                stt%precipitate_density, dot%precipitate_density(:,en), dst%nucleation_rate,  dst%diffusion_coefficient(:,en), &
+                                dst%c_matrix(:,en), dst%growth_rate_array, dst%radius_crit )
 
 
         k2 = dot%precipitate_density(:,en)
@@ -442,8 +442,8 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,&
                                 dst%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate, &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
+                                stt%precipitate_density, dot%precipitate_density(:,en), dst%nucleation_rate, &
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), dst%growth_rate_array, dst%radius_crit )
 
 
         k3 = dot%precipitate_density(:,en)
@@ -454,17 +454,17 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
 
         if (stt%time(en) > 0.0_pReal) then
-            stt%nucleation_rate = calculate_nucleation_rate(prm, stt, &
+            dst%nucleation_rate = calculate_nucleation_rate(prm, stt, &
                                                             dst, en)
         else
-                stt%nucleation_rate = 0.0_pReal
+                dst%nucleation_rate = 0.0_pReal
         endif
 
         !calculate precipitate growth rate in all bins
         call growth_precipitate(N_elements, prm%kwn_nSteps, prm%bins,  &
                                 dst%x_eq_interface,prm%atomic_volume,  prm%molar_volume, prm%ceq_precipitate, &
-                                stt%precipitate_density, dot%precipitate_density(:,en), stt%nucleation_rate,  &
-                                dst%diffusion_coefficient, dst%c_matrix(:,en), dst%growth_rate_array, stt%radius_crit )
+                                stt%precipitate_density, dot%precipitate_density(:,en), dst%nucleation_rate,  &
+                                dst%diffusion_coefficient, dst%c_matrix(:,en), dst%growth_rate_array, dst%radius_crit )
 
 
 

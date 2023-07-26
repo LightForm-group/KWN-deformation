@@ -74,17 +74,12 @@ module KWN_data_types
     type :: tKwnpowerlawState
         real(pReal), pointer, dimension(:,:) :: &
                 precipitate_density ! table with precipitate density number in each class size [/m^4]
-                
-                
+                    
         real(pReal),  dimension( :), allocatable :: &
                 c_vacancy, & ! concentration in excess vacancy
                 time ! time [s]
 
-        real(pReal) :: &
-                radius_crit, &
-                c_thermal_vacancy, & ! equilibrium concentration of vacancies
-                nucleation_rate, & ! part/m^3/s
-                dislocation_density ! m^(-2)
+
 
     end type tKwnpowerlawState
 
@@ -102,6 +97,12 @@ module KWN_data_types
         real(pReal), dimension(:,:), allocatable :: &
                 c_matrix, &
                 diffusion_coefficient
+        
+        real(pReal) :: &
+                radius_crit, &
+                c_thermal_vacancy, & ! equilibrium concentration of vacancies
+                nucleation_rate, & ! part/m^3/s
+                dislocation_density ! m^(-2)
 
        
      end type tKwnpowerlawMicrostructure

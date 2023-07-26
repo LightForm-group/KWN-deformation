@@ -94,7 +94,7 @@ function calculate_nucleation_rate(prm, stt, dst, &
 
     type(tKwnpowerlawState), intent(inout) :: stt
     type(tParameters), intent(in) :: prm
-    type(tKwnpowerlawMicrostructure), intent(in) :: dst
+    type(tKwnpowerlawMicrostructure), intent(inout) :: dst
     integer, intent(in) :: en
     !local variables
     real(pReal) :: calculate_nucleation_rate,&
@@ -104,11 +104,11 @@ function calculate_nucleation_rate(prm, stt, dst, &
                    incubation_time
 
     zeldovich_factor = prm%atomic_volume * sqrt(prm%gamma_coherent / ( kB * prm%Temperature ) ) &
-                                                / ( 2.0_pReal * PI * stt%radius_crit**2.0 )
+                                                / ( 2.0_pReal * PI * dst%radius_crit**2.0 )
 
 
     ! expression of beta star for all alloys
-    beta_star = calculate_beta_star(stt%radius_crit, prm%lattice_param, &
+    beta_star = calculate_beta_star(dst%radius_crit, prm%lattice_param, &
                                          en, dst)
 
         !TODO: Have users set N_elements, and test for N_elements==1 here to define a binary alloy
@@ -118,7 +118,7 @@ function calculate_nucleation_rate(prm, stt, dst, &
         !             different strain rates early in the simulation)
         ! calculate critical radius in the case of a binary alloy
     if (dst%c_matrix(2,en)==0) then
-            stt%radius_crit = calculate_binary_alloy_critical_radius( dst, prm, en)
+            dst%radius_crit = calculate_binary_alloy_critical_radius( dst, prm, en)
     end if
 
 
@@ -130,7 +130,7 @@ function calculate_nucleation_rate(prm, stt, dst, &
 
     calculate_nucleation_rate = nucleation_site_density * zeldovich_factor * beta_star &
                                 * exp( &
-                                  - 4.0_pReal * PI * prm%gamma_coherent * stt%radius_crit ** 2.0 &
+                                  - 4.0_pReal * PI * prm%gamma_coherent * dst%radius_crit ** 2.0 &
                                      / ( 3.0_pReal * kB * prm%Temperature ) &
                                   - incubation_time / stt%time(en) &
                                   )
@@ -151,7 +151,7 @@ function calculate_yield_stress(dst,prm,stt, en)
         print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'
         !print*, 'sum c', sum(dst%c_matrix(:,en))
     !Taylor relation for dislocation contribution
-        tau_d=0.3*mu*prm%burgers*sqrt(stt%dislocation_density)
+        tau_d=0.3*mu*prm%burgers*sqrt(dst%dislocation_density)
         print*, 'Dislocation contribution', tau_d*1e-6, 'MPa'
     !precipitate contribution to yield stress
     !expression only valid if all precipitates are sheared - if not, use an expression depending on the whole distribution
