@@ -47,6 +47,7 @@ subroutine read_configuration( &
 			jog_formation_energy, & ! formation energy for jogs
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
             enthalpy, & ! enthalpy of precipitation
+
             entropy, &  ! entropy of precipitation
             ! option 1 for flow stress calculation
             sigma_r, &  ![MPa] - sinepower law for stress
@@ -60,6 +61,7 @@ subroutine read_configuration( &
             M, & ! Taylor Factor
             dt_max, &
             time_record_step
+
 
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
 	real(pReal), dimension(:), allocatable :: &
@@ -87,6 +89,7 @@ subroutine read_configuration( &
                 	  k_p, & !constant parameter in regard to precipitate strength
                		  transition_radius, & ! Transition radius between bypassing and shearing
                		  M ! Taylor Factor for yield stress calculation
+
 
 
 
@@ -136,7 +139,6 @@ subroutine read_configuration( &
     dt_max=0.5
     !default value for period to store the outputs
     time_record_step=1.0_pReal
-
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
