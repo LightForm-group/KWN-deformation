@@ -10,7 +10,9 @@ The model is described in detail in reference [3].
 
 Compiler: gfortran or ifort
 
-Installer: [Fortran Package Manager](https://fpm.fortran-lang.org/en/index.html) : please install fpm as described on the link but using conda (not brew)
+
+Installer: [Fortran Package Manager](https://fpm.fortran-lang.org/install/index.html#install). If using on MacOS, please install with Conda Package Manager and not with homebrew.
+
 
 ## Installing the program
 
@@ -51,10 +53,13 @@ fpm install --prefix <prefix directory>
 
 ## Running the Model
 
-1. Create, or modify an existing, `namelist.input` file with input corresponding to the model described in ref. [3]. Information on the settings for the namelist is given in the `README_namelist.txt` help file.
-2. Create your simulation folder (given as `testfolder` in the namelist file), and create a `results` folder within that folder.
-3. Run `KWN-deform` in a terminal.  
-4. The outputs are written in textfiles within the output folder defined above, and example Jupyter notebooks containing code for visualising these are included in the `tests` folders.  
+1. Create, or modify, your simulation folder (`test_folder`) in the `tests` directory
+2. Inside your `test_folder`, create, or modify an existing, `namelist.input` file with input corresponding to the model described in ref. [3]. Information on the settings for the namelist is given in the `README_namelist.txt` help file.
+3. Create a `results` folder within the `test_folder`.
+4. Go to `tests` directory in a terminal and run the following command:
+   ```
+   ./run_kwn.sh test_folder 
+6. The outputs are written in textfiles within the output folder defined above, and example Jupyter notebooks containing code for visualising these are included in the `tests` folders.  
 
 
 Some examples of input files and jupyer notebooks can be found in the `tests` directory:
