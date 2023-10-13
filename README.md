@@ -50,7 +50,11 @@ The model can be installed using the `fpm install` command. This will install th
 ```
 fpm install --prefix <prefix directory>
 ```
-
+Depending on the shell you are using, you might need to add the `KWN-Deform` code to the path. To know which shell you are using, please run the following command: 
+```
+echo $SHELL
+```
+If it's `BASH` you do not need to do anything. If it is `ZSH`, please open the `./run_kwn.sh` file and replace line `LOC_KWN=which 'KWN-Deform'` by `LOC_WKN='<loc>/KWN-Deform'` where `<loc>` is `~/.local/bin` for standard user or whatever ` <prefix directory>` you used if you chose this option. 
 ## Running the Model
 
 1. Create, or modify, your simulation folder (`test_folder`) in the `tests` directory
