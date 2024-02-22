@@ -47,7 +47,6 @@ subroutine read_configuration( &
 			jog_formation_energy, & ! formation energy for jogs
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
             enthalpy, & ! enthalpy of precipitation
-
             entropy, &  ! entropy of precipitation
             ! option 1 for flow stress calculation
             sigma_r, &  ![MPa] - sinepower law for stress
@@ -60,7 +59,10 @@ subroutine read_configuration( &
             transition_radius, & ! Transition radius between bypassing and shearing
             M, & ! Taylor Factor
             dt_max, &
-            time_record_step
+            time_record_step, &
+            Temperature_mean, &
+            heating_amplitude, &
+            heating_freq
 
 
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
@@ -88,9 +90,8 @@ subroutine read_configuration( &
                       incubation, enthalpy, entropy, k_s, & !constant parameter in regard to solute strength
                 	  k_p, & !constant parameter in regard to precipitate strength
                		  transition_radius, & ! Transition radius between bypassing and shearing
-               		  M ! Taylor Factor for yield stress calculation
-
-
+               		  M, & ! Taylor Factor for yield stress calculation
+                      Temperature_mean, heating_amplitude, heating_freq
 
 
     ! set default values for parameters in case the user does not define them
@@ -139,6 +140,11 @@ subroutine read_configuration( &
     dt_max=0.5
     !default value for period to store the outputs
     time_record_step=1.0_pReal
+
+    ! if nothing is said about the cyclic temperature, set them to 0
+    Temperature_mean = 0.0_pReal
+    heating_amplitude = 0.0_pReal
+    heating_freq = 0.0_pReal
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
@@ -202,6 +208,9 @@ subroutine read_configuration( &
     prm%time_record_step=time_record_step
     prm%testfolder=testfolder
     prm%incubation=incubation
+    prm%Temperature_mean=Temperature_mean
+    prm%heating_amplitude=heating_amplitude
+    prm%heating_freq=heating_freq
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
      !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)
@@ -214,15 +223,12 @@ subroutine read_configuration( &
 end subroutine read_configuration
 
 
-subroutine output_results(testfolder, filesuffix, stt, dst, &
-                         en)
+subroutine output_results(testfolder, filesuffix, stt, dst, prm, en)
 
     type(tKwnpowerlawState), intent(in) :: stt
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
+    type(tParameters), intent(in) :: prm
 
-
-
-    
     integer, intent(in) :: en
     
     character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
@@ -298,6 +304,13 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
     open(1, file = filename,  ACTION="write", position="append")
         write(1, 601) stt%time(en), dst%dislocation_density
+    close(1)
+
+    ! added temperature saving
+    filename='results/temperature_'
+    filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+    open(1, file = filename,  ACTION="write", position="append")
+        write(1, 601) stt%time(en), prm%Temperature
     close(1)
 
 601 FORMAT(2E40.6)
