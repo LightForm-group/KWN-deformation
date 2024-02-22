@@ -6,15 +6,27 @@ module KWN_model_functions
 
 contains
 
-function calculate_shear_modulus(Temperature)
+function calculate_temperature(stt,prm,en)
+    implicit none
+    ! Function to vary temperature cyclically, but can be used as a staging ground for any temperature functions.
+    type(tKwnpowerlawState), intent(in) :: stt
+    type(tParameters), intent(in) :: prm
+    integer, intent(in) :: en
+    real(pReal) :: calculate_temperature !Temperature in [K]
+
+        calculate_temperature = prm%Temperature_mean  + prm%heating_amplitude*sin((2*pi/prm%heating_freq)*stt%time(en)-pi/2)
+
+end function calculate_temperature
+
+function calculate_shear_modulus(prm)
     implicit none
     ! Calculate Shear Modulus after McLellan 1987 MPa
-    real(pReal), intent(in) :: Temperature !temperature in K
+    type(tParameters), intent(in) :: prm
     real(pReal) :: calculate_shear_modulus !shear modulus [Pa]
 
         calculate_shear_modulus = ( 27.0 & 
                                   + (21.5 - 27.0) / (650.0 - 273.0) &
-                                  * (Temperature - 273.0) &
+                                  * (prm%Temperature - 273.0) &
                                   ) * 1.0e9
 
 end function calculate_shear_modulus
@@ -48,7 +60,7 @@ function calculate_binary_alloy_critical_radius(dst, prm, en)
     real(pReal) :: deltaGv
     real(pReal) :: calculate_binary_alloy_critical_radius
     
-    ! SAM: Added method to calculate the  explicitly
+    ! SAM: Added method to calculate explicitly
     deltaGv = -R * prm%Temperature &
                  * log( dst%c_matrix(1,en) / prm%ceq_matrix(1) ) &
                  / prm%molar_volume & 
@@ -89,8 +101,7 @@ function calculate_beta_star(radius_crit, lattice_param, en, dst)
 end function calculate_beta_star
 
 
-function calculate_nucleation_rate(prm, stt, dst, &
-                                   en)
+function calculate_nucleation_rate(prm, stt, dst, en)
 
     type(tKwnpowerlawState), intent(inout) :: stt
     type(tParameters), intent(in) :: prm
@@ -146,7 +157,7 @@ function calculate_yield_stress(dst,prm,stt, en)
     real(pReal) :: tau_s,tau_d,tau_p, mu, calculate_yield_stress
     !calculate yield stress
        
-        mu = calculate_shear_modulus(prm%Temperature)
+        mu = calculate_shear_modulus(prm)
         tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
         print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'
         !print*, 'sum c', sum(dst%c_matrix(:,en))
