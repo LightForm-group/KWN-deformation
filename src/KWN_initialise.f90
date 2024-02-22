@@ -260,10 +260,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     dst%c_matrix(:,en) = ( prm%c0_matrix(:) - dst%precipitate_volume_frac(en) * prm%ceq_precipitate(:) ) &
                             / ( 1.0 - dst%precipitate_volume_frac(en) )
 
-  
-
-
-
 
     !calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
     call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
@@ -307,8 +303,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     
     print*, 'Writing outputs'
 
-    call output_results(prm%testfolder, prm%filesuffix, stt, dst,  &
-                         en)
+    call output_results(prm%testfolder, prm%filesuffix, stt, dst, prm, en)
+    
     print*, 'End initialisation'
 
 
