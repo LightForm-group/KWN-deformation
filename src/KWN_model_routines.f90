@@ -2,7 +2,8 @@ module KWN_model_routines
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate
+    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, &
+                                    calculate_nucleation_rate, calculate_temperature
 
 
 contains
@@ -30,7 +31,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
     
 
 	dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / (prm%Temperature * kb) )
-	mu = calculate_shear_modulus(prm%Temperature)
+	mu = calculate_shear_modulus(prm)
 
 
 
@@ -134,7 +135,7 @@ subroutine update_precipate_properties(prm, dst, stt, en)
 
 end subroutine update_precipate_properties
 
-subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
+subroutine equilibrium_flat_interface(Temperature,  N_elements, stoechiometry, &
 									 c_matrix,x_eq, atomic_volume, na, molar_volume, ceq_precipitate, &
 									 diffusion_coefficient, volume_fraction, enthalpy, entropy)
 
@@ -145,7 +146,7 @@ subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
 	integer, intent(in) :: N_elements
 	integer, intent(in), dimension(N_elements+1) :: stoechiometry
 	real(pReal), intent(in), dimension(N_elements) :: c_matrix, ceq_precipitate, diffusion_coefficient
-	real(pReal), intent(in) :: T,  atomic_volume, na, molar_volume,  enthalpy, entropy, volume_fraction
+	real(pReal), intent(in) :: Temperature,  atomic_volume, na, molar_volume,  enthalpy, entropy, volume_fraction
 	real(pReal), intent(inout), dimension(N_elements+1) :: x_eq
 	real(pReal) :: xmin, xmax, solubility_product, delta
 	integer :: i
@@ -156,7 +157,7 @@ subroutine equilibrium_flat_interface(T,  N_elements, stoechiometry, &
   
 
 
-   								solubility_product=exp(entropy/8.314-enthalpy/8.314/T)
+   								solubility_product=exp(entropy/8.314-enthalpy/8.314/Temperature)
 
 
 								xmin=0.0! 
