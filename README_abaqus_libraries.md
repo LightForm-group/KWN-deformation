@@ -59,6 +59,15 @@ ifort -shared src_KWN*.o -o KWN_libraries.so
 
 ### Using shared libraries in ABAQUS
 
-Copy the `src_KWN*.o` and `KWN_libraries.so` files into your ABAQUS running directory.
+Copy the `src_KWN*.o` and `KWN_libraries.so` files into a subdirectory of your ABAQUS running directory.
 
 To access the subroutines use `user=subroutine.o` (or similar) for your abaqus command line call.
+
+Create a user environment file in your home directory, called `abaqus_v6.env`. Within this create the variable `usub_lib_dir` which should contain the full path to the subdirectory in which you've copied your `*.o` and `*.so` library files. E.g.:
+```
+usub_lib_dir='/net/scratch2/mbessdl2/LightForm/Abaqus_KWN_Test/KWN_library'
+```
+Then check your abaqus environment using `abaqus information=environment` to ensure that the `usub_lib_dir` variable exists.
+
+
+
