@@ -148,29 +148,61 @@ function calculate_nucleation_rate(prm, stt, dst, en)
 
 end function calculate_nucleation_rate
 
-function calculate_yield_stress(dst,prm,stt, en)
+function calculate_yield_stress(dst,prm,stt,en)
     implicit none
     type(tKwnpowerlawState), intent(inout) :: stt
     type(tParameters), intent(in) :: prm
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
     integer, intent(in) :: en
-    real(pReal) :: tau_s,tau_d,tau_p, mu, calculate_yield_stress
+    integer :: bin
+    real(pReal) :: tau_s,tau_d,tau_p, mu, calculate_yield_stress, &
+                    line_tension, obstacle_strength,radiusC, strength_increment
+
     !calculate yield stress
        
-        mu = calculate_shear_modulus(prm)
-        tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
-        print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'
-        !print*, 'sum c', sum(dst%c_matrix(:,en))
+    mu = calculate_shear_modulus(prm)
+    tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
+    print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'
+    !print*, 'sum c', sum(dst%c_matrix(:,en))
     !Taylor relation for dislocation contribution
-        tau_d=0.3*mu*prm%burgers*sqrt(dst%dislocation_density)
-        print*, 'Dislocation contribution', tau_d*1e-6, 'MPa'
+
+    tau_d=0.3*mu*prm%burgers*sqrt(dst%dislocation_density)
+    print*, 'Dislocation contribution', tau_d*1e-6, 'MPa'
     !precipitate contribution to yield stress
     !expression only valid if all precipitates are sheared - if not, use an expression depending on the whole distribution
-        tau_p=mu*sqrt(3.0_pReal/2.0_pReal/PI*dst%precipitate_volume_frac(en))* &
-                        prm%k_p*sqrt(dst%avg_precipitate_radius(en)/prm%transition_radius)
-        print*, 'Precipitate contribution', tau_p*1e-6, 'MPa'
-        calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
-      !  print*, 'Yield stress function:', calculate_yield_stress*1e-6, 'MPa'
+
+    line_tension = 2*prm%k_p*mu*prm%burgers**2
+
+    obstacle_strength=0.0_pReal
+
+    ! Strength model comes from Myhr et al - https://doi.org/10.1016/S1359-6454(00)00301-3 - which is modified from Deschamps and Brechet.
+
+    ! Loop through all the bins
+    kwnbins: do bin=1,prm%kwn_nSteps
+
+        radiusC = prm%bins(bin)
+
+        if (radiusC < prm%transition_radius) then
+        
+            strength_increment = line_tension * (radiusC/prm%transition_radius) * (stt%precipitate_density(bin,en)/dst%total_precipitate_density(en))
+            
+            obstacle_strength = obstacle_strength + strength_increment
+
+        else
+
+            strength_increment = line_tension * (stt%precipitate_density(bin,en)/dst%total_precipitate_density(en))
+            
+            obstacle_strength = obstacle_strength + strength_increment
+        
+        end if
+    
+    enddo kwnbins
+
+    tau_p = (1/(prm%burgers*dst%avg_precipitate_radius(en)*sqrt(2*prm%k_p*mu*prm%burgers**2)))*sqrt(3*dst%precipitate_volume_frac(en)/(2*PI))*(obstacle_strength**(3/2))
+
+    print*, 'Precipitate contribution', tau_p*1e-6, 'MPa'
+    calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
+    !  print*, 'Yield stress function:', calculate_yield_stress*1e-6, 'MPa'
 end function calculate_yield_stress
 
 end module KWN_model_functions
