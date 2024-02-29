@@ -144,8 +144,8 @@ function calculate_yield_stress(dst,prm,stt,en)
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
     integer, intent(in) :: en
     integer :: bin
-    real(pReal) :: tau_s,tau_d,tau_p, mu, calculate_yield_stress,&
-                   line_tension, obstacle_strength,radiusC, strength_increment
+    real(pReal) :: tau_s,tau_d,tau_p, mu, calculate_yield_stress, &
+                    line_tension, obstacle_strength,radiusC, strength_increment,precipitate_density_fraction
 
     !calculate yield stress
     mu = calculate_shear_modulus(prm%Temperature)
@@ -168,23 +168,32 @@ function calculate_yield_stress(dst,prm,stt,en)
     
         radiusC = prm%bins(bin)
 
-        if (radiusC < prm%transition_radius) then
+        ! Quick if statement prevents division by 0 or nan's from appearing
+        if (dst%total_precipitate_density(en) > 0.0_pReal) then
 
-            strength_increment = line_tension * (radiusC/prm%transition_radius) * (stt%precipitate_density(bin,en)/dst%total_precipitate_density(en))
-
-            obstacle_strength = obstacle_strength + strength_increment
-
+            precipitate_density_fraction = stt%precipitate_density(bin,en)/dst%total_precipitate_density(en)
         else
-
-            strength_increment = line_tension * (stt%precipitate_density(bin,en)/dst%total_precipitate_density(en))
-
-            obstacle_strength = obstacle_strength + strength_increment
+            precipitate_density_fraction = 0.0_pReal
 
         end if
 
+        if (radiusC < prm%transition_radius) then
+
+            strength_increment = line_tension * (radiusC/prm%transition_radius) * precipitate_density_fraction
+        else
+            strength_increment = line_tension * precipitate_density_fraction
+        end if
+
+        obstacle_strength = obstacle_strength + strength_increment
+
     enddo kwnbins
 
-    tau_p = (1/(prm%burgers*dst%avg_precipitate_radius(en)*sqrt(2*prm%k_p*mu*prm%burgers**2)))*sqrt(3*dst%precipitate_volume_frac(en)/(2*PI))*(obstacle_strength**(3/2))
+    if (dst%avg_precipitate_radius(en) > 0.0_pReal) then
+
+        tau_p = (1/(prm%burgers*dst%avg_precipitate_radius(en)*sqrt(2*prm%k_p*mu*prm%burgers**2)))*sqrt(3*dst%precipitate_volume_frac(en)/(2*PI))*(obstacle_strength**(3/2))
+    else
+        tau_p = 0.0_pReal
+    endif
 
     print*, 'Precipitate contribution', tau_p*1e-6, 'MPa'
     calculate_yield_stress = prm%M*(tau_s + sqrt(tau_p**2+tau_d**2))
