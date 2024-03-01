@@ -36,6 +36,7 @@ module KWN_data_types
                 solute_strength, & ! constant related to the solid solution hardening- cf [2]
                 enthalpy, & ! enthalpy of precipitation 
                 entropy, & ! entropy of precipitation
+                shear_modulus,&
                 ! the following parameters are to calculate the flow stress during deformation - there are two options detailed below
                 ! option 1 - use a sinepower law that depends on temperature and strain rate for the flow stress, that is then taken as constant during deformation
                 sigma_r, & ! constant in the sinepowerlaw for flow stress [MPa]

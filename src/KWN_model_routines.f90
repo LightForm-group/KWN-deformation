@@ -30,7 +30,7 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
     
 
 	dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / (prm%Temperature * kb) )
-	mu = calculate_shear_modulus(prm%Temperature)
+	mu = calculate_shear_modulus(prm)
 
 
 

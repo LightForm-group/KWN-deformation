@@ -6,16 +6,18 @@ module KWN_model_functions
 
 contains
 
-function calculate_shear_modulus(Temperature)
+function calculate_shear_modulus(prm)
     implicit none
-    ! Calculate Shear Modulus after McLellan 1987 MPa
-    real(pReal), intent(in) :: Temperature !temperature in K
+    type(tParameters), intent(in) :: prm
     real(pReal) :: calculate_shear_modulus !shear modulus [Pa]
 
-        calculate_shear_modulus = ( 27.0 & 
-                                  + (21.5 - 27.0) / (650.0 - 273.0) &
-                                  * (Temperature - 273.0) &
-                                  ) * 1.0e9
+    if (prm%shear_modulus > 0.0_pReal) then
+        calculate_shear_modulus = prm%shear_modulus
+    else
+        ! Aluminium temperature dependant shear modulus from McLellan 1987 - https://doi.org/10.1016/0022-3697(87)90147-8
+        calculate_shear_modulus = ( 27.0 + (21.5 - 27.0) / (650.0 - 273.0) &
+                                  * (prm%Temperature - 273.0) ) * 1.0e9
+    end if
 
 end function calculate_shear_modulus
 
@@ -148,7 +150,7 @@ function calculate_yield_stress(dst,prm,stt,en)
                     line_tension, obstacle_strength,radiusC, strength_increment,precipitate_density_fraction, bin_width
 
     !calculate yield stress
-    mu = calculate_shear_modulus(prm%Temperature)
+    mu = calculate_shear_modulus(prm)
 
     tau_s=prm%k_s*sum(dst%c_matrix(:,en))**(2.0/3.0)
     print*, 'Solid solution contribution', tau_s*1e-6, 'MPa'

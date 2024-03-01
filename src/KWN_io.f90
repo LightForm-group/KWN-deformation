@@ -47,8 +47,8 @@ subroutine read_configuration( &
 			jog_formation_energy, & ! formation energy for jogs
 			q_dislocation, & ! activation energy for diffusion at dislocation (pipe diffusion) in J/at - not used yet but to be updated
             enthalpy, & ! enthalpy of precipitation
-
             entropy, &  ! entropy of precipitation
+            shear_modulus, & ! matrix shear modulus
             ! option 1 for flow stress calculation
             sigma_r, &  ![MPa] - sinepower law for stress
             A, & ![/s] - sinepower law for stress
@@ -85,7 +85,7 @@ subroutine read_configuration( &
                       diffusion0, migration_energy, & 
                       testfolder, Temperature, stoechiometry, shape_parameter, &
                       total_time, dt_max, time_record_step, sigma_r, A, Q_stress, n, &
-                      incubation, enthalpy, entropy, k_s, & !constant parameter in regard to solute strength
+                      incubation, enthalpy, entropy, k_s, shear_modulus, & !constant parameter in regard to solute strength
                 	  k_p, & !constant parameter in regard to precipitate strength
                		  transition_radius, & ! Transition radius between bypassing and shearing
                		  M ! Taylor Factor for yield stress calculation
@@ -110,7 +110,7 @@ subroutine read_configuration( &
 	k_s=683.0e+06_pReal
 	M=2.0_pReal
 	transition_radius=3.3e-9_pReal
-
+    shear_modulus=0.0_pReal
 
     ! no deformation parameters given -> no deformation 
     strain_rate=0.0_pReal
@@ -178,6 +178,7 @@ subroutine read_configuration( &
     prm%rho_s = rho_s
     prm%strain_rate = strain_rate
     prm%Temperature=Temperature
+    prm%shear_modulus=shear_modulus
     prm%dislocation_arrangement = dislocation_arrangement
     prm%burgers = burgers
     prm%jog_formation_energy = jog_formation_energy
