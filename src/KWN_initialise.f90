@@ -4,7 +4,7 @@ module KWN_initialise
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate , equilibrium_flat_interface
-    use KWN_model_functions, only: calculate_binary_alloy_critical_radius
+    use KWN_model_functions, only: calculate_binary_alloy_critical_radius,calculate_misfit_energy
     use KWN_io, only: read_configuration, output_results
 
 contains
@@ -262,8 +262,8 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
 
   
 
-
-
+    ! Calculate the misfit energy
+    prm%misfit_energy = calculate_misfit_energy(prm)
 
     !calculate the equilibrium composition at the interface between precipitates and matrix as a function of their size (Gibbs Thomson effect)
     call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &

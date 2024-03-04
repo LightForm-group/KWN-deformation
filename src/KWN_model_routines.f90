@@ -3,7 +3,7 @@ module KWN_model_routines
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate,&
-                                    calculate_temperature
+                                    calculate_temperature, calculate_misfit_energy
 
 
 contains
@@ -403,7 +403,7 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
         endif
 
         ! SAM: Hard coded misfit energy parameter.
-        prm%misfit_energy = min(-1.0_pReal*prm%Temperature*9.98273758e+06 + 1.05292592e+10,3.77e+09)
+        prm%misfit_energy = calculate_misfit_energy(prm)
 
         print*,'Misfit Energy',prm%misfit_energy
 
