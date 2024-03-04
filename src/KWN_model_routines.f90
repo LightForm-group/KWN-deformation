@@ -361,7 +361,7 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
     !this is the routine in the main loop, calculate all variables for t=t+dt
     implicit none
 
-    type(tParameters), intent(in) :: prm
+    type(tParameters), intent(inout) :: prm
     type(tKwnpowerlawMicrostructure), intent(inout) :: dst, dst_temp
     type(tKwnpowerlawState), intent(inout) :: dot, dot_temp, stt, stt_temp
     real(pReal), intent(in) :: &
@@ -399,7 +399,7 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
             else
                 print*,'WARNING: Entropy not provided for cyclic heating.'
             endif
-            
+
         endif
 
         ! update diffusion coefficient taking into account strain induced vacancies

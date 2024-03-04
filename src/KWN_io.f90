@@ -222,16 +222,12 @@ subroutine read_configuration( &
 end subroutine read_configuration
 
 
-subroutine output_results(testfolder, filesuffix, stt, dst, &
-                         en)
+subroutine output_results(testfolder, filesuffix, stt, dst, prm,en)
 
     type(tKwnpowerlawState), intent(in) :: stt
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
-
-
-
-    
-    integer, intent(in) :: en
+    type(tParameters), intent(in) :: prm
+     integer, intent(in) :: en
     
     character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
     character*100, intent(in) :: testfolder !folder where the input file is
