@@ -2,7 +2,8 @@ module KWN_model_routines
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate
+    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate,&
+                                    calculate_temperature
 
 
 contains
@@ -206,7 +207,6 @@ end subroutine
 subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometry, &
                                 c_matrix,ceq_matrix, atomic_volume, na, molar_volume, ceq_precipitate, &
                                 bins, gamma_coherent, R,  x_eq_interface, diffusion_coefficient, volume_fraction, misfit_energy)
-    
 
     !  find the intersection between stoichiometric line and solubility line for precipitates of different sizes by dichotomy - more information in ref [3] or [6] + [5]
     implicit none
@@ -219,6 +219,7 @@ subroutine interface_composition(Temperature,  N_elements, N_steps, stoechiometr
     ! local variables
     real(pReal) :: xmin, xmax, solubility_product, delta
     integer :: i
+
 
     xmin=0.0_pReal
     xmax=1.0_pReal
@@ -381,8 +382,30 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
     allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
     allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
 
+        ! update the temperature if considering cyclic heating.
+        if (prm%heating_freq > 0.0_pReal) then
+            prm%Temperature = calculate_temperature(stt,prm,en)
+
+            ! update the equilibrium Gibbs-Thomson effect if the temperature changes
+            call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
+            prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
+            R, dst%x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+
+            ! update the equilibrium concentration if entropy is provided, otherwise provide a warning.
+            if (prm%entropy>0.0_pReal) then
+                call 			equilibrium_flat_interface(prm%Temperature,  N_elements,  prm%stoechiometry, &
+                                                           prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                                           dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+            else
+                print*,'WARNING: Entropy not provided for cyclic heating.'
+            endif
+            
+        endif
+
         ! update diffusion coefficient taking into account strain induced vacancies
-        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)                                        
+        call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)     
+        
+        
         
         ! calculate nucleation rate
         if (stt%time(en) > 0.0_pReal) then

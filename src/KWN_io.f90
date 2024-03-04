@@ -60,7 +60,9 @@ subroutine read_configuration( &
             transition_radius, & ! Transition radius between bypassing and shearing
             M, & ! Taylor Factor
             dt_max, &
-            time_record_step
+            time_record_step, &
+            heating_amplitude,heating_freq,Temperature_mean ! Cyclic temperature parameters
+
 
 
 	! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
@@ -88,8 +90,8 @@ subroutine read_configuration( &
                       incubation, enthalpy, entropy, k_s, shear_modulus, & !constant parameter in regard to solute strength
                 	  k_p, & !constant parameter in regard to precipitate strength
                		  transition_radius, & ! Transition radius between bypassing and shearing
-               		  M ! Taylor Factor for yield stress calculation
-
+               		  M,&! Taylor Factor for yield stress calculation
+                      heating_amplitude,heating_freq,Temperature_mean ! Cyclic temperature parameters
 
 
 
@@ -139,6 +141,8 @@ subroutine read_configuration( &
     dt_max=0.5
     !default value for period to store the outputs
     time_record_step=1.0_pReal
+    ! default to no cyclic heating
+    heating_freq=0.0_pReal
 
     ! ensure allocatable arrays are allocated to same size as prm arrays
     allocate(migration_energy(N_elements), source=0.0_pReal)
@@ -203,6 +207,9 @@ subroutine read_configuration( &
     prm%time_record_step=time_record_step
     prm%testfolder=testfolder
     prm%incubation=incubation
+    prm%heating_amplitude=heating_amplitude
+    prm%heating_freq=heating_freq
+    prm%Temperature_mean=Temperature_mean
     !print*, 'Writing output parameter file...'
     ! Write the namelist to our test folder, for record keeping
      !open (unit=2, file=trim(testfolder)//'/namelist.output', status='replace', iostat=status)

@@ -49,8 +49,9 @@ module KWN_data_types
                 transition_radius, & ! Transition radius between bypassing and shearing
                 M,& ! Taylor Factor
                 dt_max,& ! max time step for numerical integration
-                time_record_step! defines the frequency for the output files
-        
+                time_record_step,&! defines the frequency for the output files
+                heating_amplitude,heating_freq,Temperature_mean ! Cyclic temperature parameters
+
 
         ! the following variables are allocatable to allow for precipitates with multiple elements (only situations with 2 elements are used here)
         real(pReal), dimension(:), allocatable :: &

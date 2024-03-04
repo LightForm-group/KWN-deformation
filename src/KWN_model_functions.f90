@@ -6,6 +6,18 @@ module KWN_model_functions
 
 contains
 
+function calculate_temperature(stt,prm,en)
+    implicit none
+    ! Function to vary temperature cyclically, but can be used as a staging ground for any temperature functions.
+    type(tKwnpowerlawState), intent(in) :: stt
+    type(tParameters), intent(in) :: prm
+    integer, intent(in) :: en
+    real(pReal) :: calculate_temperature !Temperature in [K]
+
+        calculate_temperature = prm%Temperature_mean  + prm%heating_amplitude*sin((2*pi/prm%heating_freq)*stt%time(en)-pi/2)
+
+end function calculate_temperature
+
 function calculate_shear_modulus(prm)
     implicit none
     type(tParameters), intent(in) :: prm
