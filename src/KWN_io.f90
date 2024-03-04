@@ -308,6 +308,13 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
         write(1, 601) stt%time(en), dst%dislocation_density
     close(1)
 
+    ! added temperature saving
+    filename='results/temperature_'
+    filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+    open(1, file = filename,  ACTION="write", position="append")
+        write(1, 601) stt%time(en), prm%Temperature
+    close(1)
+
 601 FORMAT(2E40.6)
 901 FORMAT(3E40.6)
 1001 FORMAT(4E40.6)
