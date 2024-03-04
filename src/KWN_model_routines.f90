@@ -402,10 +402,13 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
 
         endif
 
+        ! SAM: Hard coded misfit energy parameter.
+        prm%misfit_energy = min(-1.0_pReal*prm%Temperature*9.98273758e+06 + 1.05292592e+10,3.77e+09)
+
+        print*,'Misfit Energy',prm%misfit_energy
+
         ! update diffusion coefficient taking into account strain induced vacancies
         call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)     
-        
-        
         
         ! calculate nucleation rate
         if (stt%time(en) > 0.0_pReal) then
