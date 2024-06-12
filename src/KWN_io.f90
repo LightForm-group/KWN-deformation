@@ -215,15 +215,11 @@ subroutine read_configuration( &
 end subroutine read_configuration
 
 
-subroutine output_results(testfolder, filesuffix, stt, dst, &
-                         en)
+subroutine output_results(testfolder, filesuffix, stt, dst, prm,en)
 
     type(tKwnpowerlawState), intent(in) :: stt
     type(tKwnpowerlawMicrostructure), intent(in) :: dst
-
-
-
-    
+    type(tParameters), intent(in) :: prm
     integer, intent(in) :: en
     
     character*100, intent(in) :: filesuffix !the file suffix contains the temperature and strain rate used for the simulation
@@ -299,6 +295,13 @@ subroutine output_results(testfolder, filesuffix, stt, dst, &
     filename = trim(testfolder)//trim(filename)//trim(filesuffix)
     open(1, file = filename,  ACTION="write", position="append")
         write(1, 601) stt%time(en), dst%dislocation_density
+    close(1)
+
+    ! added temperature saving
+    filename='results/temperature_'
+    filename=trim(testfolder)//trim(filename)//trim(filesuffix)
+    open(1, file = filename,  ACTION="write", position="append")
+        write(1, 601) stt%time(en), prm%Temperature
     close(1)
 
 601 FORMAT(2E40.6)

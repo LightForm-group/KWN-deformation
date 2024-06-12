@@ -102,8 +102,7 @@ subroutine run_model(prm, dot, stt, dst, &
           
 
             if (time_record < stt%time(en)) then !record the outputs every 'time_record' seconds
-                call output_results(prm%testfolder, prm%filesuffix, stt, dst, &
-                                     en)
+                call output_results(prm%testfolder, prm%filesuffix, stt, dst, prm, en)
                 ! next time for which the outputs should be written
                         if (prm%time_record_step > 0) then
                             !Save data linearly
