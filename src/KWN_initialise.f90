@@ -307,8 +307,7 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     
     print*, 'Writing outputs'
 
-    call output_results(prm%testfolder, prm%filesuffix, stt, dst,  &
-                         en)
+    call output_results(prm%testfolder, prm%filesuffix, stt, dst, prm, en)
     print*, 'End initialisation'
 
 
