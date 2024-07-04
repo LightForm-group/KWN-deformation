@@ -1,0 +1,2 @@
+ #Time, [s], Mean Radius [nm], Total precipitate density [micron-^3], Volume fraction [], Critical radius [nm], Nucleation rate [s^-1.micron-^3], Concentration in the matrix [at %]
+                                0.000000                             2999.404539                            0.981556E-03                            0.125000E+00                           -0.110968E+08                            0.000000E+00                            0.674857E-01                            0.000000E+00
