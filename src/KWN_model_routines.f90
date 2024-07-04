@@ -28,19 +28,21 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
         production_rate, & ! production rate for excess vacancies
         annihilation_rate!annihilation rate for excess vacancies
     
-
+    strain = prm%strain_rate * stt%time(en)
 	dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / (prm%Temperature * kb) )
 	mu = calculate_shear_modulus(prm)
 
 
 
-    dst%dislocation_density = calculate_dislocation_density(prm%rho_0, prm%rho_s, strain)
+    dst%dislocation_density = calculate_dislocation_density(prm, stt, en)
     	! if there is deformation, calculate the vacancy related parameters
 
     ! two situations: if the user defines parameters for precipitation hardening and solid solution hardening, use them
     ! otherwise; use the asinh function for the flow stress 
     if(prm%sigma_r>0.0_pReal) then
         dst%yield_stress = prm%sigma_r * asinh(((prm%strain_rate / (prm%A)) * exp(prm%Q_stress / ( 8.314 * prm%Temperature) )) ** (1/prm%n))    
+    elseif(prm%sigma_0>0.0_pReal) then
+        dst%yield_stress= prm%sigma_0 + prm%b*strain**(prm%n_z)
     else    
         dst%yield_stress=calculate_yield_stress(dst,prm,stt, en)
     endif
@@ -70,9 +72,9 @@ subroutine update_diffusion_coefficient(prm, stt, dst, dot, dt, en)
 	!update the diffusion coefficient as a function of the vacancy concentration
 	! the first term adds the contribution of excess vacancies,the second adds the contribution of dislocation pipe diffusion
 	dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -prm%migration_energy / (prm%Temperature * kb) ) &
-							* (1.0 + stt%c_vacancy(en) / dst%c_thermal_vacancy )! &
-						!   +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-						!   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)
+							* (1.0 + stt%c_vacancy(en) / dst%c_thermal_vacancy ) &
+						   +2*(dst%dislocation_density)*prm%atomic_volume/prm%burgers&
+						   *prm%diffusion0*exp(-(prm%q_dislocation )/prm%Temperature/kb)
 
 end subroutine update_diffusion_coefficient
 

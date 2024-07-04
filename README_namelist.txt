@@ -45,10 +45,12 @@ vacancy_generation = 3.500e-02          ! mechanical vacancy production constant
 rho_0 = 1.000e+14                       ! [/m^2] initial dislocation density
 rho_s = 1.000e+14                       ! [/m^2] saturation dislocation density
 burgers = 2.9000e-10                    ! [m] burgers vector
+empirical_law_dislocation_density=1     ! set to 1 to activate the empirical law for dislocation density (Ziyu)
+M_z = 1 ! if the empirical law for dislocation density is used, rho is calculated as 1.56e14/(1+exp(-19.1*(strain-0.204)))/M^2
 
 ! sinepower law for stress, for these parameters cf reference paper
 ! the following parameters will be ignored if k_p, k_s, M and transition radius are given
-sigma_r = 1.0000e+08                    ! [MPa] ! default value 0, which means no external stress
+sigma_r = 1.0000e+08                    ! [Pa] ! default value 0, which means no external stress
 A = 5.2140e-06                          ! [/s]
 Q_stress = 6.0000e+04                   ! [J/mol]
 n = 6.6831e+00                          !
@@ -59,10 +61,12 @@ n = 6.6831e+00                          !
 k_p=0.035_pReal  
 k_s=683.0e+06_pReal
 M=2.0_pReal
-transition_radius=3.3e-9_pReal ! transition radius between shearing and bypassing - for now the model is only valid if all precipitates are sheard but that can be easily modified using for exemple the model in Deschamps and Brechet Acta mater. Vol. 47, No. 1, pp. 293±305, 1999
-
-
-
+transition_radius=3.3e-9_pReal ! transition radius between shearing and bypassing - for now the model is only valid if all precipitates are sheared but that can be easily modified using for exemple the model in Deschamps and Brechet Acta mater. Vol. 47, No. 1, pp. 293±305, 1999
+!! alternatively (for Ziyu), use a polynomial law for the flow stress of the form sigma=sigma_0+b*strain^n_z
+sigma_0= 206.07e6 ! [Pa] ! default value 0, no external stress
+b = 487.6e6 ! [Pa] default value 0, no exterenal stress
+n_z= 0.3454 ! [] default value 0
+ 
 ! KWN discretisation
 kwn_step0 = -9.300e+00                  ! [m] starting bin radius: if kwn_step0 is negative, it's in logscale, otherwise in linscale
 kwn_stepsize = 1.000e-02                ! [m] spacing between bins in logscale: if kwn_step0 is negative, it's in logscale, otherwise in linscale

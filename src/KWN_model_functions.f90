@@ -22,21 +22,28 @@ function calculate_shear_modulus(prm)
 end function calculate_shear_modulus
 
 
-function calculate_dislocation_density(rho_0, rho_s, strain)
-    implicit none
+function calculate_dislocation_density(prm, stt, en)
     !from Detemple 1995 Physical Review B - Condensed Matter and Materials Physics, 52(1), 125–133.
-    real(pReal), intent(in) :: &
-                            rho_0, & !initial dislocation density
-                            rho_s, & !saturation dislocation density
-                            strain   !macroscopic strain
+    implicit none
+    type(tParameters), intent(in) :: prm
+    type(tKwnpowerlawState), intent(inout) :: stt
+    integer, intent(in) :: en
     real(pReal) :: calculate_dislocation_density
-
-    calculate_dislocation_density = rho_s &
-                                    * ( 1 & 
-                                        - (sqrt(rho_s) - sqrt(rho_0)) &
-                                          / sqrt(rho_s) &
+    real(pReal) :: &
+        strain
+    
+    strain = prm%strain_rate * stt%time(en)
+    if (prm%empirical_law_dislocation_density>0) then 
+        calculate_dislocation_density = 1.56e14/(1+exp(-19.1*(strain-0.2042)))/prm%M_z**2 ! Ziyu's law from experimental data
+    else
+	    calculate_dislocation_density = prm%rho_s &
+                                        * ( 1 & 
+                                        - (sqrt(prm%rho_s) - sqrt(prm%rho_0)) &
+                                          / sqrt(prm%rho_s) &
                                           * exp( (-1.0 / 2.0) * 86 * strain) &
-                                      ) ** 2
+                                        ) ** 2
+    endif
+
 
 end function calculate_dislocation_density
 
@@ -189,7 +196,9 @@ function calculate_yield_stress(dst,prm,stt,en)
     enddo kwnbins
 
     if (dst%avg_precipitate_radius(en) > 0.0_pReal) then    
-        tau_p = (obstacle_strength**(3.0_pReal/2.0_pReal))*sqrt(3*dst%precipitate_volume_frac(en)/(2*PI))/(prm%burgers*dst%avg_precipitate_radius(en)*sqrt(line_tension))
+        tau_p = (obstacle_strength**(3.0_pReal/2.0_pReal))*&
+        sqrt(3*dst%precipitate_volume_frac(en)/(2*PI))/(prm%burgers*dst%avg_precipitate_radius(en)&
+        *sqrt(line_tension))
     else
         tau_p = 0.0_pReal
     endif

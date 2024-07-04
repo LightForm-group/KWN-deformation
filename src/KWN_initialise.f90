@@ -4,7 +4,7 @@ module KWN_initialise
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
     use KWN_model_routines, only: interface_composition, growth_precipitate , equilibrium_flat_interface
-    use KWN_model_functions, only: calculate_binary_alloy_critical_radius
+    use KWN_model_functions, only: calculate_binary_alloy_critical_radius, calculate_dislocation_density
     use KWN_io, only: read_configuration, output_results
 
 contains
@@ -98,13 +98,17 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     prm%q_dislocation = prm%q_dislocation / na ! convert to J/at
     prm%vacancy_energy = prm%vacancy_energy * ev_to_Jat  ! convert from ev to  J/at
     prm%vacancy_migration_energy = prm%vacancy_migration_energy * ev_to_Jat  ! convert from ev to  J/at
+    
+    !initialise dislocation density
 
+    dst%dislocation_density = calculate_dislocation_density(prm, stt, en)
+   
 
     prm%ceq_precipitate = real(prm%stoechiometry(1:2)) / real(sum(prm%stoechiometry)) ! calculate the concentration of the precipitate from the stoichiometry
 
       !calculate initial diffusion coefficient
-    dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / prm%Temperature / kb ) ! +2*(dislocation_density)*prm%atomic_volume/prm%burgers&
-                            !   *prm%diffusion0*exp(-(prm%q_dislocation )/Temperature/kb)  ! include pipe diffusion
+    dst%diffusion_coefficient(:,en) = prm%diffusion0 * exp( -(prm%migration_energy) / prm%Temperature / kb )  + 2*(dst%dislocation_density)*prm%atomic_volume/prm%burgers&
+                              *prm%diffusion0*exp(-(prm%q_dislocation )/prm%Temperature/kb)  ! include pipe diffusion
 
 
     ! if the enthalpy and entropy are provided, then the equilibrium concentration should be calculated, otherwise take the input value for equilibrium concentration
@@ -147,7 +151,6 @@ subroutine initialise_model_state(prm, dot, stt, dst, &
     dst%avg_precipitate_radius(en) = prm%mean_radius_initial
     dst%precipitate_volume_frac(en) = prm%volume_fraction_initial
     stt%c_vacancy(en) = 0.0_pReal
-    dst%dislocation_density = prm%rho_0
     dst%nucleation_rate = 0.0_pReal
     stt%time=0.0_pReal
 

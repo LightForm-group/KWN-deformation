@@ -39,6 +39,8 @@ subroutine read_configuration( &
             shape_parameter, &
 			rho_0, & !initial dislocation density
 			rho_s, & !saturation dislocation density
+            empirical_law_dislocation_density, & ! if set to 1, use Ziyu's law to calculate the dislocation density
+            M_z, &
 			strain_rate, & ! strain rate in /s
             Temperature, &
             total_time, & !total heat treatment time for the simulation
@@ -59,6 +61,11 @@ subroutine read_configuration( &
             k_p, & !constant parameter in regard to precipitate strength
             transition_radius, & ! Transition radius between bypassing and shearing
             M, & ! Taylor Factor
+            
+            ! option 3- use a polynomial for the flow stress (Ziyu) ! for Ziyu's law flow stress= sigma_0+b*strain^n_z
+            sigma_0, & ![Pa]
+            b, & ![Pa]
+            n_z, & ![]
             dt_max, &
             time_record_step
 
@@ -88,9 +95,9 @@ subroutine read_configuration( &
                       incubation, enthalpy, entropy, k_s, shear_modulus, & !constant parameter in regard to solute strength
                 	  k_p, & !constant parameter in regard to precipitate strength
                		  transition_radius, & ! Transition radius between bypassing and shearing
-               		  M ! Taylor Factor for yield stress calculation
-
-
+               		  M, & ! Taylor Factor for yield stress calculation
+                      sigma_0, b, n_z, & ! parameters for Ziyu's law for the flow stress
+                      empirical_law_dislocation_density, M_z
 
 
     ! set default values for parameters in case the user does not define them
@@ -111,6 +118,16 @@ subroutine read_configuration( &
 	M=2.0_pReal
 	transition_radius=3.3e-9_pReal
     shear_modulus=0.0_pReal
+
+    ! Default value for Ziyu's law for flow stress
+    sigma_0=0
+    b=0
+    n_z=0
+    ! by default, don't use Ziyu's law for dislocation density
+    empirical_law_dislocation_density=0.0_pReal
+    ! parameter in Ziyu's law for dislocation density
+    M_z=1.0_pReal
+
 
     ! no deformation parameters given -> no deformation 
     strain_rate=0.0_pReal
@@ -189,6 +206,7 @@ subroutine read_configuration( &
     prm%migration_energy = migration_energy
     prm%enthalpy = enthalpy 
     prm%entropy = entropy
+    ! calculation of the flow stress - different possibilities : (1) sinepower law - (2) calculation of the stress depending on precipitates+solid solution + dislocation - (3) Ziyu's experimental law fitted to a polynomial
     prm%sigma_r = sigma_r 
     prm%A = A
     prm%Q_stress = Q_stress
@@ -197,6 +215,14 @@ subroutine read_configuration( &
     prm%k_s=k_s
     prm%M=M
     prm%transition_radius=transition_radius
+    ! for Ziyu's law flow stress= sigma_0+b*strain^n_z
+    prm%sigma_0 = sigma_0
+    prm%b=b
+    prm%n_z=n_z ! exponent on t
+    !! 
+    prm%empirical_law_dislocation_density=empirical_law_dislocation_density
+    prm%M_z=M_z
+    !
     prm%stoechiometry=stoechiometry
     prm%total_time=total_time ! heat treatment time for the simulation 
     prm%dt_max=dt_max

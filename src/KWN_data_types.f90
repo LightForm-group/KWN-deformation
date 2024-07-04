@@ -26,6 +26,8 @@ module KWN_data_types
                 volume_fraction_initial, &! initial total precipitate distribution
                 rho_0, & !initial dislocation density
                 rho_s, & !saturation dislocation density
+                empirical_law_dislocation_density, & ! if set to 1, the empirical law from Ziyu is used to calculate the dislocation density
+                M_z, & ! M_z is the parameter used in the dislocation density law experimentally determined (Ziyu measures M^2*rho)
                 strain_rate, & ! strain rate in /s
                 Temperature, &
                 total_time, & ! heat treatment time for the simulation in s
@@ -48,6 +50,11 @@ module KWN_data_types
                 k_p, & !constant parameter in regard to precipitate strength
                 transition_radius, & ! Transition radius between bypassing and shearing
                 M,& ! Taylor Factor
+                ! option 3- use a polynomial for the flow stress (Ziyu) ! for Ziyu's law flow stress= sigma_0+b*strain^n_z
+                sigma_0, & ![Pa]
+                b, & ![Pa]
+                n_z, & ![]
+                ! time related numerical parameters
                 dt_max,& ! max time step for numerical integration
                 time_record_step! defines the frequency for the output files
         
