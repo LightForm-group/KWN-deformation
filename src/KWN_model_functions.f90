@@ -6,6 +6,30 @@ module KWN_model_functions
 
 contains
 
+function calculate_temperature(stt,prm,en)
+    implicit none
+    ! Function to vary temperature cyclically, but can be used as a staging ground for any temperature functions.
+    type(tKwnpowerlawState), intent(in) :: stt
+    type(tParameters), intent(in) :: prm
+    integer, intent(in) :: en
+    real(pReal) :: calculate_temperature !Temperature in [K]
+
+        calculate_temperature = prm%Temperature_mean  + prm%heating_amplitude*sin((2*pi/prm%heating_freq)*stt%time(en)-pi/2)
+
+end function calculate_temperature
+
+function calculate_misfit_energy(prm)
+    implicit none
+    ! Function to vary temperature cyclically, but can be used as a staging ground for any temperature functions.
+    type(tParameters), intent(in) :: prm
+    real(pReal) :: calculate_misfit_energy !Temperature in [K]
+
+    !calculate_misfit_energy = min(-1.0_pReal*prm%Temperature*9.98273758e+06 + 1.05292592e+10,3.77e+09)
+    calculate_misfit_energy = max(min(1.0_pReal*prm%Temperature*prm%misfit_gradient + prm%misfit_intercept,prm%misfit_max),0.0_pReal)
+
+end function calculate_misfit_energy
+
+
 function calculate_shear_modulus(prm)
     implicit none
     type(tParameters), intent(in) :: prm

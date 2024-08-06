@@ -2,8 +2,8 @@ module KWN_model_routines
 
     use KWN_parameters
     use KWN_data_types, only: tParameters, tKwnpowerlawState, tKwnpowerlawMicrostructure
-    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate
-
+    use KWN_model_functions, only : calculate_shear_modulus, calculate_dislocation_density, calculate_yield_stress, calculate_nucleation_rate,&    
+                                    calculate_temperature, calculate_misfit_energy
 
 contains
 
@@ -380,6 +380,30 @@ subroutine next_time_increment(prm, dst, dst_temp, dot, dot_temp, stt, stt_temp,
     allocate(k2(prm%kwn_nSteps), source=0.0_pReal) !
     allocate(k3(prm%kwn_nSteps), source=0.0_pReal)
     allocate(k4(prm%kwn_nSteps), source=0.0_pReal)
+
+        ! update the temperature if considering cyclic heating.
+        if (prm%heating_freq > 0.0_pReal) then
+            prm%Temperature = calculate_temperature(stt,prm,en)
+
+            ! update the equilibrium Gibbs-Thomson effect if the temperature changes
+            call interface_composition( prm%Temperature,  N_elements, prm%kwn_nSteps, prm%stoechiometry, prm%c0_matrix,prm%ceq_matrix, &
+            prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, prm%bins, prm%gamma_coherent, &
+            R, dst%x_eq_interface, dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%misfit_energy)
+
+            ! update the equilibrium concentration if entropy is provided, otherwise provide a warning.
+            if (prm%entropy>0.0_pReal) then
+                call 			equilibrium_flat_interface(prm%Temperature,  N_elements,  prm%stoechiometry, &
+                                                        prm%c0_matrix,prm%ceq_matrix, prm%atomic_volume, na, prm%molar_volume, prm%ceq_precipitate, &
+                                                        dst%diffusion_coefficient, dst%precipitate_volume_frac(en), prm%enthalpy, prm%entropy)
+            else
+                print*,'WARNING: Entropy not provided for cyclic heating.'
+            endif
+
+        endif
+
+        ! SAM: Hard coded misfit energy parameter.
+        prm%misfit_energy = calculate_misfit_energy(prm)
+        print*,'Misfit Energy',prm%misfit_energy
 
         ! update diffusion coefficient taking into account strain induced vacancies
         call update_diffusion_coefficient(prm, stt, dst, dot, dt, en)                                        
